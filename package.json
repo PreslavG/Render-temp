@@ -1,0 +1,21 @@
+{
+  "name": "render-temp",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PreslavG/Render-temp.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/PreslavG/Render-temp/issues"
+  },
+  "homepage": "https://github.com/PreslavG/Render-temp#readme"
+}
