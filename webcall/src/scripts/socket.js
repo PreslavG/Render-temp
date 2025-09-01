@@ -8,3 +8,6 @@ const socket = io("https://render-host-z9qz.onrender.com", {
 socket.on("connect", () => {
   console.log("✅ Connected to backend:", socket.id);
 });
+
+
+export default socket;
