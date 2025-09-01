@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import socket from "./scripts/socket";
-import { auth, onAuthStateChanged } from "./scripts/firebase";
+import { auth } from "./scripts/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 
 export default function Room() {
   const { roomId } = useParams();
