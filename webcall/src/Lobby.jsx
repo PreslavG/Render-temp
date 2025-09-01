@@ -40,6 +40,7 @@ export default function Lobby() {
       return;
     }
 
+    socket.emit("join-room", { roomId, email: currentUserEmail });
     navigate(`/room/${roomId}`); // SPA navigation
     alert(socket.id + "     email:  " + currentUserEmail);
   };
