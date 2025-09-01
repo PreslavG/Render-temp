@@ -1,19 +1,13 @@
-const fs = require("fs");
-const https = require("https");
 const express = require("express");
+const http = require("http");
 const { Server } = require("socket.io");
 
-// Load SSL certs
-const privateKey = fs.readFileSync("./certs/privkey.pem", "utf8");
-const certificate = fs.readFileSync("./certs/fullchain.pem", "utf8");
-const credentials = { key: privateKey, cert: certificate };
-
 const app = express();
-const httpsServer = https.createServer(credentials, app);
+const server = http.createServer(app);
 
-const io = new Server(httpsServer, {
+const io = new Server(server, {
   cors: {
-    origin: "https://localhost:5173", // frontend URL
+    origin: "https://your-frontend.onrender.com", // replace with your actual frontend Render URL
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -57,4 +51,8 @@ io.on("connection", (socket) => {
   });
 });
 
-httpsServer.listen(443, () => console.log("HTTPS Socket.IO server running on https://your-domain.com"));
+// Render sets process.env.PORT
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`Socket.IO server running on port ${PORT}`);
+});
