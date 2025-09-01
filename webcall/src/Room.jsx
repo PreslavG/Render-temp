@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { socket } from "./scripts/socket";
+import socket  from "./scripts/socket";
 
 export default function Room() {
   const { roomId } = useParams();

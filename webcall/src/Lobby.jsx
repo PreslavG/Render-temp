@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "./scripts/firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { socket } from "./scripts/socket";
+import  socket  from "./scripts/socket";
 
 export default function Lobby() {
   const navigate = useNavigate();

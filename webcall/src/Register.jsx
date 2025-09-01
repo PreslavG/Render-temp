@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { auth } from "./scripts/firebase"; // your firebase.js file
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { socket } from "./scripts/socket";
+import  socket  from "./scripts/socket";
 
 
 export default function RegistrationForm() {
