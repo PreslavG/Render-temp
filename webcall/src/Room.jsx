@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import socket from "./scripts/socket";
+import { auth, onAuthStateChanged } from "./scripts/firebase"; // make sure to import correctly
 
 export default function Room() {
   const { roomId } = useParams();
   const navigate = useNavigate();
-  const { state } = useLocation(); // get email from lobby
-  const userEmail = state?.email;
+  const [userEmail, setUserEmail] = useState(null);
 
   const localVideoRef = useRef();
   const localStreamRef = useRef();
@@ -14,24 +14,32 @@ export default function Room() {
   const [remoteStreams, setRemoteStreams] = useState([]);
 
   useEffect(() => {
-    if (!userEmail) {
-      alert("No user email found. Redirecting to lobby.");
-      navigate("/lobby");
-      return;
-    }
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        alert("Sign in first");
+        navigate("/login");
+        return;
+      }
+
+      setUserEmail(user.email); // get email from Firebase
+    });
+
+    return () => unsubscribe();
+  }, [navigate]);
+
+  useEffect(() => {
+    if (!userEmail) return; // wait until we have the email
 
     const startLocalStream = async () => {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       localVideoRef.current.srcObject = stream;
       localStreamRef.current = stream;
     };
-
     startLocalStream();
 
-    // Connect socket if not already connected
     if (!socket.connected) socket.connect();
 
-    // Join the room with real user email
+    // Join the room with Firebase email
     socket.emit("join-room", { roomId, email: userEmail });
 
     // Socket event handlers
@@ -48,7 +56,6 @@ export default function Room() {
     socket.on("user-left", handleUserLeft);
 
     return () => {
-      // Cleanup
       Object.values(peerConnections.current).forEach(pc => pc.close());
       peerConnections.current = {};
       localStreamRef.current?.getTracks().forEach(track => track.stop());
@@ -60,7 +67,7 @@ export default function Room() {
       socket.off("ice-candidate", handleIce);
       socket.off("user-left", handleUserLeft);
     };
-  }, [roomId, navigate, userEmail]);
+  }, [roomId, userEmail]);
 
   const createPeerConnection = (peerId) => {
     if (peerConnections.current[peerId]) return peerConnections.current[peerId];
