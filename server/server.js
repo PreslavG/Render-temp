@@ -7,11 +7,16 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "https://your-frontend.onrender.com", // replace with your actual frontend Render URL
+    origin: "https://your-frontend.onrender.com", // replace with actual frontend Render link
     methods: ["GET", "POST"],
     credentials: true,
   },
 });
+
+app.get("/", (req, res) => {
+  res.send("Socket.IO server is running 🚀");
+});
+
 
 const rooms = {}; // roomId -> Set(socketId)
 
