@@ -1,7 +1,7 @@
-import fs from "fs";
-import https from "https";
-import express from "express";
-import { Server } from "socket.io";
+const fs = require("fs");
+const https = require("https");
+const express = require("express");
+const { Server } = require("socket.io");
 
 // Load SSL certs
 const privateKey = fs.readFileSync("./certs/privkey.pem", "utf8");
@@ -13,7 +13,7 @@ const httpsServer = https.createServer(credentials, app);
 
 const io = new Server(httpsServer, {
   cors: {
-    origin: "https://your-frontend-domain.com", // frontend URL
+    origin: "https://localhost:5173", // frontend URL
     methods: ["GET", "POST"],
     credentials: true,
   },
