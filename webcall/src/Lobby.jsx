@@ -6,6 +6,7 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 export default function Lobby() {
   const navigate = useNavigate();
 
+  // Check if user is logged in
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (!user) {
@@ -17,6 +18,7 @@ export default function Lobby() {
     return () => unsubscribe();
   }, [navigate]);
 
+  // Logout function
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -26,8 +28,8 @@ export default function Lobby() {
     }
   };
 
+  // Join a room
   const joinRoom = (roomId) => {
-    // just navigate; Room will handle Firebase email automatically
     navigate(`/room/${roomId}`);
   };
 

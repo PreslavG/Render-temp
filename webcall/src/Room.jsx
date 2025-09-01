@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import socket from "./scripts/socket";
-import { auth } from "./scripts/firebase"; // make sure to import correctly
-import { onAuthStateChanged } from "firebase/auth";
+import { auth, onAuthStateChanged } from "./scripts/firebase";
 
 export default function Room() {
   const { roomId } = useParams();
@@ -11,9 +10,10 @@ export default function Room() {
 
   const localVideoRef = useRef();
   const localStreamRef = useRef();
-  const peerConnections = useRef({});
+  const peerConnections = useRef({}); // peerId => RTCPeerConnection
   const [remoteStreams, setRemoteStreams] = useState([]);
 
+  // Get Firebase user
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (!user) {
@@ -21,29 +21,29 @@ export default function Room() {
         navigate("/login");
         return;
       }
-
-      setUserEmail(user.email); // get email from Firebase
+      setUserEmail(user.email);
     });
-
     return () => unsubscribe();
   }, [navigate]);
 
+  // Main WebRTC logic
   useEffect(() => {
-    if (!userEmail) return; // wait until we have the email
+    if (!userEmail) return; // wait until email is ready
 
     const startLocalStream = async () => {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       localVideoRef.current.srcObject = stream;
       localStreamRef.current = stream;
     };
+
     startLocalStream();
 
     if (!socket.connected) socket.connect();
 
-    // Join the room with Firebase email
+    // Join room
     socket.emit("join-room", { roomId, email: userEmail });
 
-    // Socket event handlers
+    // Event handlers
     const handleUserJoined = ({ peerId }) => handleNewPeer(peerId, true);
     const handleOffer = ({ from, offer }) => handleIncomingOffer(from, offer);
     const handleAnswer = ({ from, answer }) => handleIncomingAnswer(from, answer);
@@ -70,11 +70,17 @@ export default function Room() {
     };
   }, [roomId, userEmail]);
 
+  // Create peer connection only once per peer
   const createPeerConnection = (peerId) => {
     if (peerConnections.current[peerId]) return peerConnections.current[peerId];
 
-    const pc = new RTCPeerConnection({
-      iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+    const pc = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
+
+    // Add local tracks only once
+    localStreamRef.current.getTracks().forEach(track => {
+      if (!pc.getSenders().some(sender => sender.track === track)) {
+        pc.addTrack(track, localStreamRef.current);
+      }
     });
 
     pc.ontrack = (event) => {
@@ -92,10 +98,9 @@ export default function Room() {
     return pc;
   };
 
+  // Handle new peer
   const handleNewPeer = async (peerId, isOfferer) => {
     const pc = createPeerConnection(peerId);
-    localStreamRef.current.getTracks().forEach(track => pc.addTrack(track, localStreamRef.current));
-
     if (isOfferer) {
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
@@ -105,7 +110,6 @@ export default function Room() {
 
   const handleIncomingOffer = async (from, offer) => {
     const pc = createPeerConnection(from);
-    localStreamRef.current.getTracks().forEach(track => pc.addTrack(track, localStreamRef.current));
     await pc.setRemoteDescription(offer);
     const answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
@@ -135,7 +139,9 @@ export default function Room() {
     <div>
       <h2>Room: {roomId}</h2>
       <video ref={localVideoRef} autoPlay playsInline muted width="300" />
-      {remoteStreams.map(remote => <RemoteVideo key={remote.id} stream={remote.stream} />)}
+      {remoteStreams.map(remote => (
+        <RemoteVideo key={remote.id} stream={remote.stream} />
+      ))}
       <button onClick={leaveRoom}>Leave Room</button>
     </div>
   );
