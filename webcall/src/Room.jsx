@@ -5,7 +5,7 @@ import "./App.css"
 
 
 export default function Room() {
-  const { roomId } = useParams();
+  let roomId;
   const navigate = useNavigate();
   const [userEmail, setUserEmail] = useState(null);
 
