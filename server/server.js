@@ -7,7 +7,7 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "https://your-frontend.onrender.com", // replace with actual frontend Render link
+    origin: "https://frontend-deployment-nn8o.onrender.com",
     methods: ["GET", "POST"],
     credentials: true,
   },
