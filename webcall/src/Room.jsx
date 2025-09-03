@@ -19,7 +19,8 @@ export default function Room() {
   
   // Main WebRTC logic
   useEffect(() => {
-    if (!userEmail) return; // wait until email is ready
+    if (!userEmail) return;
+    alert(roomId); // wait until email is ready
 
     const startLocalStream = async () => {
       stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
