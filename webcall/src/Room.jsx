@@ -13,8 +13,6 @@ export default function Room() {
   const localStreamRef = useRef();
   const peerConnections = useRef({}); // peerId => RTCPeerConnection
   const [remoteStreams, setRemoteStreams] = useState([]);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isVideoOff, setIsVideoOff] = useState(false);
 
   
   // Main WebRTC logic
@@ -22,7 +20,7 @@ export default function Room() {
     if (!userEmail) return; // wait until email is ready
 
     const startLocalStream = async () => {
-      stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       localVideoRef.current.srcObject = stream;
       localStreamRef.current = stream;
 
@@ -126,25 +124,13 @@ export default function Room() {
     navigate("/lobby");
   };
 
-  const toggleMute = () => {
-    if (!localStreamRef.current) return;
+  const mute = () =>{
+        stream.audio = false;
+      };
 
-    localStreamRef.current.getAudioTracks().forEach(track => {
-      track.enabled = !track.enabled;
-    });
-    setIsMuted(prev => !prev);
-  };
-
-  // Toggle video
-  const toggleVideo = () => {
-    if (!localStreamRef.current) return;
-
-    localStreamRef.current.getVideoTracks().forEach(track => {
-      track.enabled = !track.enabled;
-    });
-    setIsVideoOff(prev => !prev);
-  };
-
+  const nocam = () =>{
+        stream.video = false;
+      };
 
 
   return (
