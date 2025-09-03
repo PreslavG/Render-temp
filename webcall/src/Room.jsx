@@ -5,7 +5,7 @@ import "./App.css"
 
 
 export default function Room() {
-  let roomId;
+  const { roomId } = useParams();
   const navigate = useNavigate();
   const [userEmail, setUserEmail] = useState(null);
 
@@ -19,8 +19,7 @@ export default function Room() {
   
   // Main WebRTC logic
   useEffect(() => {
-    if (!userEmail) return;
-    alert(roomId); // wait until email is ready
+    if (!userEmail) return; // wait until email is ready
 
     const startLocalStream = async () => {
       stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
@@ -147,6 +146,7 @@ export default function Room() {
   };
 
 
+
   return (
     <div>
       <h2>{roomId}</h2>
@@ -155,14 +155,8 @@ export default function Room() {
         <RemoteVideo key={remote.id} stream={remote.stream} />
       ))}
       <button onClick={leaveRoom}>Leave Room</button>
-      <button onClick={toggleVideo}>
-        {isVideoOff ? "Start Video" : "Stop Video"}
-      </button>
-
-      {/* Audio toggle button */}
-      <button onClick={toggleMute}>
-        {isMuted ? "Unmute" : "Mute"}
-      </button>
+      <button onClick={nocam}>No video</button>
+      <button onClick={mute}>Mute</button>
 
     </div>
   );
