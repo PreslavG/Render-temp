@@ -30,7 +30,8 @@ export default function Lobby() {
 
   // Join a room
   const joinRoom = (roomId) => {
-    navigate(roomId);
+    alert(roomId);
+    navigate(`${roomId}`);
   };
 
   return (
