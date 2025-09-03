@@ -16,7 +16,7 @@ export default function Lobby() {
     });
 
     return () => unsubscribe();
-  }, [navigate]);
+  });
 
   // Logout function
   const handleLogout = async () => {
@@ -36,9 +36,9 @@ export default function Lobby() {
   return (
     <div>
       <h1>Lobby</h1>
-      <button onClick={() => joinRoom("my-room-1")}>Join Room 1</button>
-      <button onClick={() => joinRoom("my-room-2")}>Join Room 2</button>
-      <button onClick={() => joinRoom("my-room-3")}>Join Room 3</button>
+      <button onClick={() => joinRoom("Math")}>Join Math</button>
+      <button onClick={() => joinRoom("Medicine")}>Join Medicine</button>
+      <button onClick={() => joinRoom("Programming")}>Join Programming</button>
       <button onClick={handleLogout}>Logout</button>
     </div>
   );

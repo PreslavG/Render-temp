@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import socket from "./scripts/socket";
-import { auth } from "./scripts/firebase";
-import { onAuthStateChanged } from "firebase/auth";
+import "./App.css"
+
 
 export default function Room() {
   const { roomId } = useParams();
@@ -13,30 +13,20 @@ export default function Room() {
   const localStreamRef = useRef();
   const peerConnections = useRef({}); // peerId => RTCPeerConnection
   const [remoteStreams, setRemoteStreams] = useState([]);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isVideoOff, setIsVideoOff] = useState(false);
 
-  // Get Firebase user
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        alert("Sign in first");
-        navigate("/login");
-        return;
-      }
-      setUserEmail(user.email);
-    });
-    return () => unsubscribe();
-  }, [navigate]);
-
+  
   // Main WebRTC logic
   useEffect(() => {
     if (!userEmail) return; // wait until email is ready
 
     const startLocalStream = async () => {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       localVideoRef.current.srcObject = stream;
       localStreamRef.current = stream;
-    };
 
+    };
     startLocalStream();
 
     if (!socket.connected) socket.connect();
@@ -136,14 +126,43 @@ export default function Room() {
     navigate("/lobby");
   };
 
+  const toggleMute = () => {
+    if (!localStreamRef.current) return;
+
+    localStreamRef.current.getAudioTracks().forEach(track => {
+      track.enabled = !track.enabled;
+    });
+    setIsMuted(prev => !prev);
+  };
+
+  // Toggle video
+  const toggleVideo = () => {
+    if (!localStreamRef.current) return;
+
+    localStreamRef.current.getVideoTracks().forEach(track => {
+      track.enabled = !track.enabled;
+    });
+    setIsVideoOff(prev => !prev);
+  };
+
+
   return (
     <div>
-      <h2>Room: {roomId}</h2>
-      <video ref={localVideoRef} autoPlay playsInline muted width="300" />
+      <h2>{roomId}</h2>
+      <video ref={localVideoRef} autoPlay playsInline width="300" />
       {remoteStreams.map(remote => (
         <RemoteVideo key={remote.id} stream={remote.stream} />
       ))}
       <button onClick={leaveRoom}>Leave Room</button>
+      <button onClick={toggleVideo}>
+        {isVideoOff ? "Start Video" : "Stop Video"}
+      </button>
+
+      {/* Audio toggle button */}
+      <button onClick={toggleMute}>
+        {isMuted ? "Unmute" : "Mute"}
+      </button>
+
     </div>
   );
 }
