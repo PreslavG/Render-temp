@@ -35,7 +35,7 @@ export default function App() {
         {/* Lobby page */}
         <Route path="/lobby" element={user ? <Lobby /> : <Navigate to="/login" />} />
 
-        <Route path="/room/:roomId" element={user ? <Room /> : <Navigate to="/login" />} />
+        <Route path="/roomId" element={user ? <Room /> : <Navigate to="/login" />} />
 
         {/* Redirect unknown paths */}
         <Route path="*" element={<Navigate to={user ? "/lobby" : "/login"} />} />
