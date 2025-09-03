@@ -13,6 +13,8 @@ export default function Room() {
   const localStreamRef = useRef();
   const peerConnections = useRef({}); // peerId => RTCPeerConnection
   const [remoteStreams, setRemoteStreams] = useState([]);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isVideoOff, setIsVideoOff] = useState(false);
 
   
   // Main WebRTC logic
@@ -124,13 +126,24 @@ export default function Room() {
     navigate("/lobby");
   };
 
-  const mute = () =>{
-        stream.audio = false;
-      };
+  const toggleMute = () => {
+    if (!localStreamRef.current) return;
 
-  const nocam = () =>{
-        stream.video = false;
-      };
+    localStreamRef.current.getAudioTracks().forEach(track => {
+      track.enabled = !track.enabled;
+    });
+    setIsMuted(prev => !prev);
+  };
+
+  // Toggle video
+  const toggleVideo = () => {
+    if (!localStreamRef.current) return;
+
+    localStreamRef.current.getVideoTracks().forEach(track => {
+      track.enabled = !track.enabled;
+    });
+    setIsVideoOff(prev => !prev);
+  };
 
 
   return (
@@ -141,9 +154,14 @@ export default function Room() {
         <RemoteVideo key={remote.id} stream={remote.stream} />
       ))}
       <button onClick={leaveRoom}>Leave Room</button>
-      <button onClick={nocam}>No video</button>
-      <button onClick={mute}>Mute</button>
+      <button onClick={toggleVideo}>
+        {isVideoOff ? "Start Video" : "Stop Video"}
+      </button>
 
+      {/* Audio toggle button */}
+      <button onClick={toggleMute}>
+        {isMuted ? "Unmute" : "Mute"}
+      </button>
     </div>
   );
 }
