@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import socket from "./scripts/socket";
-import "./App.css"
-
+import { auth } from "./scripts/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 
 export default function Room() {
   const { roomId } = useParams();
@@ -11,30 +11,43 @@ export default function Room() {
 
   const localVideoRef = useRef();
   const localStreamRef = useRef();
-  const peerConnections = useRef({}); // peerId => RTCPeerConnection
+  const peerConnections = useRef({});
   const [remoteStreams, setRemoteStreams] = useState([]);
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
 
-  
-  // Main WebRTC logic
+  // Get Firebase email
   useEffect(() => {
-    if (!userEmail) return; // wait until email is ready
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        navigate("/login");
+      } else {
+        setUserEmail(user.email);
+      }
+    });
+    return () => unsubscribe();
+  }, [navigate]);
+
+  // Start local stream & join room after userEmail
+  useEffect(() => {
+    if (!userEmail) return;
 
     const startLocalStream = async () => {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      localVideoRef.current.srcObject = stream;
-      localStreamRef.current = stream;
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        localVideoRef.current.srcObject = stream;
+        localStreamRef.current = stream;
 
+        if (!socket.connected) socket.connect();
+        socket.emit("join-room", { roomId, email: userEmail });
+      } catch (err) {
+        console.error("Cannot access camera/microphone:", err);
+        alert("Cannot access camera/microphone.");
+      }
     };
+
     startLocalStream();
 
-    if (!socket.connected) socket.connect();
-
-    // Join room
-    socket.emit("join-room", { roomId, email: userEmail });
-
-    // Event handlers
     const handleUserJoined = ({ peerId }) => handleNewPeer(peerId, true);
     const handleOffer = ({ from, offer }) => handleIncomingOffer(from, offer);
     const handleAnswer = ({ from, answer }) => handleIncomingAnswer(from, answer);
@@ -51,8 +64,8 @@ export default function Room() {
       Object.values(peerConnections.current).forEach(pc => pc.close());
       peerConnections.current = {};
       localStreamRef.current?.getTracks().forEach(track => track.stop());
-
       socket.emit("leave-room", { roomId });
+
       socket.off("user-joined", handleUserJoined);
       socket.off("offer", handleOffer);
       socket.off("answer", handleAnswer);
@@ -61,17 +74,14 @@ export default function Room() {
     };
   }, [roomId, userEmail]);
 
-  // Create peer connection only once per peer
+  // WebRTC helpers
   const createPeerConnection = (peerId) => {
     if (peerConnections.current[peerId]) return peerConnections.current[peerId];
 
     const pc = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
 
-    // Add local tracks only once
-    localStreamRef.current.getTracks().forEach(track => {
-      if (!pc.getSenders().some(sender => sender.track === track)) {
-        pc.addTrack(track, localStreamRef.current);
-      }
+    localStreamRef.current?.getTracks().forEach(track => {
+      if (!pc.getSenders().some(sender => sender.track === track)) pc.addTrack(track, localStreamRef.current);
     });
 
     pc.ontrack = (event) => {
@@ -89,7 +99,6 @@ export default function Room() {
     return pc;
   };
 
-  // Handle new peer
   const handleNewPeer = async (peerId, isOfferer) => {
     const pc = createPeerConnection(peerId);
     if (isOfferer) {
@@ -118,6 +127,7 @@ export default function Room() {
     setRemoteStreams(prev => prev.filter(s => s.id !== peerId));
   };
 
+  // Controls
   const leaveRoom = () => {
     Object.values(peerConnections.current).forEach(pc => pc.close());
     peerConnections.current = {};
@@ -127,41 +137,27 @@ export default function Room() {
   };
 
   const toggleMute = () => {
-    if (!localStreamRef.current) return;
-
-    localStreamRef.current.getAudioTracks().forEach(track => {
-      track.enabled = !track.enabled;
-    });
+    localStreamRef.current?.getAudioTracks().forEach(track => { track.enabled = !track.enabled });
     setIsMuted(prev => !prev);
   };
 
-  // Toggle video
   const toggleVideo = () => {
-    if (!localStreamRef.current) return;
-
-    localStreamRef.current.getVideoTracks().forEach(track => {
-      track.enabled = !track.enabled;
-    });
+    localStreamRef.current?.getVideoTracks().forEach(track => { track.enabled = !track.enabled });
     setIsVideoOff(prev => !prev);
   };
 
-
   return (
-    <div>
-      <h2>{roomId}</h2>
-      <video ref={localVideoRef} autoPlay playsInline width="300" />
-      {remoteStreams.map(remote => (
-        <RemoteVideo key={remote.id} stream={remote.stream} />
-      ))}
-      <button onClick={leaveRoom}>Leave Room</button>
-      <button onClick={toggleVideo}>
-        {isVideoOff ? "Start Video" : "Stop Video"}
-      </button>
-
-      {/* Audio toggle button */}
-      <button onClick={toggleMute}>
-        {isMuted ? "Unmute" : "Mute"}
-      </button>
+    <div className="room-container">
+      <h2>Room: {roomId}</h2>
+      <div className="videos">
+        <video ref={localVideoRef} autoPlay playsInline muted className="local-video" />
+        {remoteStreams.map(remote => <RemoteVideo key={remote.id} stream={remote.stream} />)}
+      </div>
+      <div className="controls">
+        <button onClick={leaveRoom}>Leave Room</button>
+        <button onClick={toggleVideo}>{isVideoOff ? "Start Video" : "Stop Video"}</button>
+        <button onClick={toggleMute}>{isMuted ? "Unmute" : "Mute"}</button>
+      </div>
     </div>
   );
 }
@@ -169,5 +165,5 @@ export default function Room() {
 function RemoteVideo({ stream }) {
   const ref = useRef();
   useEffect(() => { ref.current.srcObject = stream; }, [stream]);
-  return <video ref={ref} autoPlay playsInline width="300" />;
+  return <video ref={ref} autoPlay playsInline className="remote-video" />;
 }

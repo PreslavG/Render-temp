@@ -1,6 +1,6 @@
 import { io } from "socket.io-client";
 
-const socket = io("https://backend-deploy-wwgl.onrender.com", {
+const socket = io("http://localhost:5000", {
   autoConnect : false,
   transports: ["websocket"],
   withCredentials: true, // if your backend uses credentials

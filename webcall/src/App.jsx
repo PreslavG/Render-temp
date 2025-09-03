@@ -1,17 +1,18 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Login from "./Login";
-import RegistrationForm from "./Register";
-import Lobby from "./Lobby";
-import Room from "./Room";
 import { useEffect, useState } from "react";
 import { auth } from "./scripts/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 
+import Login from "./Login";
+import RegistrationForm from "./Register";
+import Lobby from "./Lobby";
+import Room from "./Room";
 
 export default function App() {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true); // to wait for auth check
+  const [loading, setLoading] = useState(true);
 
+  // Initialize Firebase auth
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -21,24 +22,24 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  if (loading) return <p>Loading...</p>; // optional: show while checking auth
+  if (loading) return <p>Loading...</p>; // wait for auth
 
   return (
     <BrowserRouter>
       <Routes>
-        {/* Login page */}
+        {/* Login / Register */}
         <Route path="/login" element={!user ? <Login /> : <Navigate to="/lobby" />} />
-
-        {/* Registration page */}
         <Route path="/register" element={!user ? <RegistrationForm /> : <Navigate to="/lobby" />} />
 
-        {/* Lobby page */}
+        {/* Lobby */}
         <Route path="/lobby" element={user ? <Lobby /> : <Navigate to="/login" />} />
 
-        <Route path="/roomId" element={user ? <Room /> : <Navigate to="/login" />} />
+        {/* Room */}
+        <Route path="/room/:roomId" element={user ? <Room /> : <Navigate to="/login" />} />
 
         {/* Redirect unknown paths */}
         <Route path="*" element={<Navigate to={user ? "/lobby" : "/login"} />} />
       </Routes>
     </BrowserRouter>
-  )}
+  );
+}
