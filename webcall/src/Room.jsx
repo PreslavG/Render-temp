@@ -16,7 +16,6 @@ export default function Room() {
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
 
-  // Get Firebase email
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (!user) {
@@ -74,7 +73,6 @@ export default function Room() {
     };
   }, [roomId, userEmail]);
 
-  // WebRTC helpers
   const createPeerConnection = (peerId) => {
     if (peerConnections.current[peerId]) return peerConnections.current[peerId];
 
@@ -127,7 +125,6 @@ export default function Room() {
     setRemoteStreams(prev => prev.filter(s => s.id !== peerId));
   };
 
-  // Controls
   const leaveRoom = () => {
     Object.values(peerConnections.current).forEach(pc => pc.close());
     peerConnections.current = {};
