@@ -1,8 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import socket from "./scripts/socket";
-import { auth } from "./scripts/firebase";
+import { db, auth } from "./scripts/firebase";
 import { onAuthStateChanged } from "firebase/auth";
+import {
+  collection,
+  addDoc,
+  serverTimestamp,
+  query,
+  orderBy,
+  onSnapshot,
+} from "firebase/firestore";
 
 export default function Room() {
   const { roomId } = useParams();
@@ -15,7 +23,26 @@ export default function Room() {
   const [remoteStreams, setRemoteStreams] = useState([]);
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState("");
 
+  useEffect(() => {
+    const q = query(
+      collection(db, "rooms", roomId, "messages"),
+      orderBy("createdAt", "asc")
+    );
+
+    const unsubscribe1 = onSnapshot(q, (snapshot) => {
+      const msgs = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setMessages(msgs);
+    });
+
+    return () => unsubscribe1();
+  }, [roomId]);
+  
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (!user) {
@@ -27,7 +54,6 @@ export default function Room() {
     return () => unsubscribe();
   }, [navigate]);
 
-  // Start local stream & join room after userEmail
   useEffect(() => {
     if (!userEmail) return;
 
@@ -44,6 +70,8 @@ export default function Room() {
         alert("Cannot access camera/microphone.");
       }
     };
+
+    
 
     startLocalStream();
 
@@ -143,7 +171,22 @@ export default function Room() {
     setIsVideoOff(prev => !prev);
   };
 
+  async function sendMessage(e) {
+    e.preventDefault();
+    if (newMessage.trim() === "") return;
+
+    await addDoc(collection(db, "rooms", roomId, "messages"), {
+      text: newMessage,
+      sender: auth.currentUser?.email || "Anonymous",
+      createdAt: serverTimestamp(),
+    });
+
+    setNewMessage("");
+  }
+
+
   return (
+    <div>
     <div className="room-container">
       <h2>Room: {roomId}</h2>
       <div className="videos">
@@ -156,7 +199,39 @@ export default function Room() {
         <button onClick={toggleMute}>{isMuted ? "Unmute" : "Mute"}</button>
       </div>
     </div>
+
+    <div className="flex flex-col h-screen p-4">
+      <h2 className="text-xl font-bold mb-2">Room: {roomId}</h2>
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto border rounded p-2 space-y-2">
+        {messages.map((msg) => (
+          <div key={msg.id} className="p-2 rounded bg-gray-200">
+            <strong>{msg.sender}:</strong> {msg.text}
+          </div>
+        ))}
+      </div>
+
+      {/* Input */}
+      <form onSubmit={sendMessage} className="flex mt-2">
+        <input
+          type="text"
+          value={newMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
+          className="flex-1 border rounded-l px-2"
+          placeholder="Type your message..."
+        />
+        <button
+          type="submit"
+          className="bg-blue-500 text-white px-4 rounded-r"
+        >
+          Send
+        </button>
+      </form>
+    </div>
+    </div>
   );
+
 }
 
 function RemoteVideo({ stream }) {
