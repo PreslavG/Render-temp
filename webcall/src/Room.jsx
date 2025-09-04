@@ -11,6 +11,7 @@ import {
   orderBy,
   onSnapshot,
 } from "firebase/firestore";
+import "./Room.css";
 
 export default function Room() {
   const { roomId } = useParams();
@@ -186,7 +187,7 @@ export default function Room() {
 
 
   return (
-    <div>
+    <div className="roomPage">
     <div className="room-container">
       <h2>Room: {roomId}</h2>
       <div className="videos">
@@ -200,30 +201,36 @@ export default function Room() {
       </div>
     </div>
 
-    <div className="flex flex-col h-screen p-4">
-      <h2 className="text-xl font-bold mb-2">Room: {roomId}</h2>
+    <div className="chatBox">
+      <h2 className="chatboxTitle">{roomId}</h2>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto border rounded p-2 space-y-2">
-        {messages.map((msg) => (
-          <div key={msg.id} className="p-2 rounded bg-gray-200">
-            <strong>{msg.sender}:</strong> {msg.text}
-          </div>
-        ))}
+      <div className="messagesBox">
+        {messages.map((msg) => {
+             const isMe = msg.sender === userEmail;
+        return (
+          <div
+        key={msg.id}
+        className={`message ${isMe ? "message-me" : "message-other"}`}
+         >
+        {!isMe && <strong>{msg.sender}: </strong>}
+        {msg.text}
       </div>
+    );
+  })}
+        </div>
 
       {/* Input */}
-      <form onSubmit={sendMessage} className="flex mt-2">
+      <form onSubmit={sendMessage} className="sumbitMessages">
         <input
           type="text"
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
-          className="flex-1 border rounded-l px-2"
+          className="messageRaw"
           placeholder="Type your message..."
         />
         <button
           type="submit"
-          className="bg-blue-500 text-white px-4 rounded-r"
+          className="submitButton"
         >
           Send
         </button>

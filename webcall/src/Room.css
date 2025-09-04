@@ -1,0 +1,175 @@
+/* General page layout */
+body{
+    overflow-y: hidden;
+}
+.room-container,
+.chatBox {
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.room-container {
+  flex: 2;
+  height: 94vh;
+}
+
+.chatBox {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  max-width: 400px;
+  height: 96vh; /* full height */
+  border-right: 2px solid #e5e7eb;
+  padding: 16px;
+  background: #fff;
+}
+
+/* Page flex layout */
+body, html, #root, .room-page {
+  height: 100%;
+  margin: 0;
+}
+
+.room-page {
+  display: flex;
+  gap: 16px;
+}
+
+/* Videos */
+.videos {
+  margin-top: 50px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+
+.local-video,
+.remote-video {
+  width: 320px;
+  height: 240px;
+  background: black;
+  border-radius: 12px;
+  object-fit: cover;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* Controls */
+.controls {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+  position: fixed;       /* fixes it relative to the viewport */
+  bottom: 20px;          /* distance from the bottom */
+  left: 50%;             /* start from the horizontal center */
+  transform: translateX(-130%); /* truly center it */
+  z-index: 1000;
+}
+
+.controls button {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  background: #08090b;
+  color: white;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.controls button:hover {
+  background: #1e40af;
+}
+
+/* Chat title */
+.chatboxTitle {
+  font-size: 3rem;
+  font-weight: bold;
+  margin-bottom: 8px;
+  margin-top: 0;
+  text-align: center;
+  background-color: #d1d5db;
+  width: 100%;
+}
+
+/* Messages container */
+.messagesBox {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 8px;
+  margin-bottom: 8px;
+}
+
+/* Scrollbar style */
+.messagesBox::-webkit-scrollbar {
+  width: 6px;
+}
+
+.messagesBox::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  border-radius: 4px;
+}
+
+.messagesBox::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Chat bubbles */
+.message {
+  padding: 8px 12px;
+  border-radius: 16px;
+  max-width: 70%;
+  word-wrap: break-word;
+  margin-bottom: 6px;
+}
+
+.message-me {
+  background-color: #2563eb;
+  color: white;
+  margin-left: auto; /* align right */
+  text-align: right;
+}
+
+.message-other {
+  background-color: #e5e7eb;
+  color: #111827;
+  margin-right: auto; /* align left */
+  text-align: left;
+}
+
+/* Input form */
+.sumbitMessages {
+  display: flex;
+  gap: 4px;
+}
+
+.messageRaw {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  outline: none;
+}
+
+.submitButton {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  background: #2563eb;
+  color: white;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.submitButton:hover {
+  background: #1e40af;
+}
+
+.roomPage{
+  display: flex;          /* makes children inline-flex */
+  flex-wrap: wrap;        /* allows wrapping to next line if too many */
+  gap: 5px;              /* space between items */
+  align-items: center;    /* vertical alignment */
+}
+
