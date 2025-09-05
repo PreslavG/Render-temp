@@ -82,9 +82,10 @@ export default function Login() {
         />
         <a href="" id="forgPass" onClick={handleForgotPassword}>Forgot password?</a>
         <button onClick={handleLogin} className="loginButton">Login</button>
-        <p>Dont have a registration?</p>
-        <button type="button" onClick={goToRegister} className="loginButton">Sign up</button>
+        
       </form>
+        <p>Dont have a registration?</p>
+      <button type="button" onClick={goToRegister} className="loginButton">Sign up</button>
     </div>
     </div>
   );

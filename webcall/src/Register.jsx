@@ -39,7 +39,7 @@ export default function RegistrationForm() {
     }
   };
   const goToLogin = () => {
-    navigate("/login"); // navigate to registration page
+    navigate("/login"); 
         };
 
   return (
@@ -82,7 +82,7 @@ export default function RegistrationForm() {
 
       <button className="registerButton" type="submit">Register</button>
          </form>
-          <a href="" type="href" onClick={goToLogin}>Already have an account?</a>
+          <button type="button" onClick={goToLogin}>Already have an account?</button>
       </div>
     </div>
   );
