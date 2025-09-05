@@ -4,6 +4,7 @@ import { auth } from "./scripts/firebase";
 import { useState, useEffect } from "react";
 import { db } from "./scripts/firebase.js";
 import { collection, getDocs, addDoc, onSnapshot } from "firebase/firestore";
+import "./Lobby.css"
 
 export default function Lobby() {
   const navigate = useNavigate();
@@ -87,45 +88,59 @@ export default function Lobby() {
 
 
   return (
-     <div>
-      <h1>Lobby</h1>
+    <div className="returnLobby">
+      <div className="lobbyInfo">
+        <h1 className="lobbyTitle">Lobby</h1>
+        <h1 className="infoText">You are now in the lobby of the online classroom!</h1>
+        <p>Now choose one of the few rooms we have to start studying like never before!
+          And remember, 10, 11 or 12 hours aren't worth it if you don't remember anything at the end, so there is timer, to remember when to rest! 
+        </p>
 
-      <div className="p-4 space-y-2">
-      {rooms.map((room) => (
-        <button
-          key={room.id}
-          className="px-4 py-2 rounded-xl bg-blue-500 text-white hover:bg-blue-600"
-          onClick={() => joinRoom(`${room.id}`)}
-          
-        >
-          {room.id}
-        </button>
-      ))}
-    </div>
+        <p>
+          If you want you can always leave us 😔 or create a new room with button! 
+        </p>
+       <div className="buttons">
+        <button onClick={handleLogout} className="lobbyButton">Logout</button>
+        <button onClick={() => setIsOpen(true)} className="lobbyButton">Add Button</button>
+        </div>
 
-     <button onClick={handleLogout}>Logout</button>
+        <h2>Enjoy!</h2>
 
+      </div>
 
+        <div className="buttonList">
+          <h1 className="buttonlistTitle">Rooms:</h1>
+            {rooms.map((room) => (
+            <button
+              key={room.id}
+               className="roomButton"
+                onClick={() => joinRoom(`${room.id}`)}>
+               {room.id}
+            </button>
+            ))}
+        </div>
 
-    
-      <button onClick={() => setIsOpen(true)}>Add Button</button>
 
       {/* Popup */}
       {isOpen && (
-        <div>
-          <h3>Enter button text:</h3>
-          <input
-            type="text"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="Type here..."
-          />
-          <div>
-            <button onClick={roomAdd}>Submit</button>
-            <button onClick={() => setIsOpen(false)}>Cancel</button>
-          </div>
-        </div>
-      )}
+  <div className="popup-overlay">
+    <div className="popup">
+      <h3>Enter room name:</h3>
+      <input
+        type="text"
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="Type here..."
+        maxLength={15}
+      />
+      <div>
+        <button onClick={roomAdd}>Submit</button>
+        <button onClick={() => setIsOpen(false)}>Cancel</button>
+      </div>
+    </div>
+  </div>
+)}
+
     </div>
   );
 }

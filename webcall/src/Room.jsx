@@ -189,7 +189,7 @@ export default function Room() {
   return (
     <div className="roomPage">
     <div className="room-container">
-      <h2>Room: {roomId}</h2>
+      <h2 className="roomName">Room: {roomId}</h2>
       <div className="videos">
         <video ref={localVideoRef} autoPlay playsInline muted className="local-video" />
         {remoteStreams.map(remote => <RemoteVideo key={remote.id} stream={remote.stream} />)}
@@ -202,7 +202,7 @@ export default function Room() {
     </div>
 
     <div className="chatBox">
-      <h2 className="chatboxTitle">{roomId}</h2>
+      <h2 className="chatboxTitle">Chat</h2>
 
       <div className="messagesBox">
         {messages.map((msg) => {

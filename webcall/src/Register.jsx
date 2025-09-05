@@ -2,12 +2,15 @@ import { useState } from "react";
 import { auth } from "./scripts/firebase"; // your firebase.js file
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import  socket  from "./scripts/socket";
+import "./Register.css"
+import { Navigate, useNavigate } from "react-router-dom";
 
 
 export default function RegistrationForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault(); // prevent page refresh
@@ -35,10 +38,15 @@ export default function RegistrationForm() {
       alert("Registration failed. Please try again.");
     }
   };
+  const goToLogin = () => {
+    navigate("/login"); // navigate to registration page
+        };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <h2>Register</h2>
+    <div className="Page">
+      <div className="registerReturn">
+          <form className="formData" onSubmit={handleSubmit}>
+          <h2 className="registerTitle">Register</h2>
       <div>
         <label htmlFor="username">Name:</label>
         <input
@@ -72,7 +80,10 @@ export default function RegistrationForm() {
         />
       </div>
 
-      <button type="submit">Register</button>
-    </form>
+      <button className="registerButton" type="submit">Register</button>
+         </form>
+          <a href="" onClick={goToLogin}>Already have an account?</a>
+      </div>
+    </div>
   );
 }

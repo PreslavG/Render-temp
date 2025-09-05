@@ -1,0 +1,174 @@
+@import url('https://fonts.cdnfonts.com/css/cartoon-free');
+
+
+
+ .returnLobby {
+    display: flex;
+    background-color: rgb(248, 253, 253);
+    height: 100vh;
+    gap: 20px;
+  justify-content: space-between;
+  position: relative;          
+  padding: 50px;
+  margin: 0;
+  border-radius: 0%;
+  overflow: hidden;           
+  z-index: 1;     
+
+
+}
+
+.returnLobby::before {
+  content: "";
+  position: absolute;
+  inset: 0;  
+  background-size: cover;
+  background-image: url(https://i.ytimg.com/vi/9UEjIPoiZ7w/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLAnVcPc-Pzm0Fb4_GK3-qTRYkpQYw);
+  background-position: center;
+  filter: blur(2px);
+  transform: scale(1.1);        
+  z-index: -1;                 
+}
+ 
+ 
+
+ .lobbyInfo{
+    display: flex;
+      justify-content: center; /* horizontal center */
+     align-items: center;
+     flex-direction: column;
+    margin-left: 30px;
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 70%;
+    padding: 30px;
+    height: 82vh;
+    text-shadow: 2px 2px 30px rgb(255, 255, 255);
+    color: wheat;
+ }
+.buttons{
+    display: flex;
+    flex-direction:row;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.lobbyButton{
+    background-color: rgb(0, 0, 0,0.5);
+    border-radius: 20%;
+    height: 50px;
+    width: 175px;
+    cursor: pointer;
+    font-family: 'Pelmeshka', 'Luckiest Guy', cursive, sans-serif;
+    color: wheat;
+    text-shadow: 2px 2px 20px rgb(0, 0, 0);
+    
+}
+
+.lobbyButton:hover{
+  background-color: wheat;
+  color: #111;
+}
+
+.lobbyTitle{
+  color: wheat;
+  font-size: 4rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  margin-top: 0;
+  font-family: 'Pelmeshka', 'Luckiest Guy', cursive, sans-serif;
+
+}
+
+/* Room button list */
+.buttonList{
+  background-color: rgb(0, 0, 0,0.5);
+  border-radius: 10%;
+  display: flex;
+  flex-direction: column;
+  height: 90vh;  
+  padding: 20px;           /* optional spacing inside container */
+  box-sizing: border-box;
+  gap: 5px;
+  margin-left: 50px;
+}
+
+.buttonList {
+  overflow: auto; /* adds scroll if content exceeds container */
+}
+
+.buttonlistTitle{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-decoration: underline;
+    font-family: 'Climate Crisis', sans-serif;
+    color: wheat;
+    text-shadow: 2px 2px 20px rgb(231, 226, 226);
+                                                
+}
+
+
+.roomButton {
+ height: 100px;
+ background-color: rgb(0, 0, 0,0.5);
+ border-radius: 20%;
+ cursor: pointer;
+ font-family: 'Pelmeshka', 'Luckiest Guy', cursive, sans-serif;
+ color: wheat;
+ text-shadow: 2px 2px 20px rgb(0, 0, 0);
+ cursor: pointer; 
+ transition: background 0.25s;
+}
+
+.roomButton:hover {
+  background-color: wheat;
+  color: #111;
+}
+
+
+
+
+.popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 50;
+}
+
+/* Popup box */
+.popup {
+  background: white;
+  padding: 2rem;
+  border-radius: 1rem;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 400px;
+}
+
+.popup h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
+  color: #111;
+}
+
+.popup input {
+  width: 100%;
+  padding: 0.6rem;
+  border-radius: 0.5rem;
+  border: 1px solid #ddd;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+}
+
+.popup input:focus {
+  border-color: #3b82f6;
+  outline: none;
+}
+
+.popup button {
+  margin-right: 0.5rem;
+}

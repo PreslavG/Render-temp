@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword,sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "./scripts/firebase";
 import  socket  from "./scripts/socket";
+import "./Login.css"
 
 export default function Login() {
   const navigate = useNavigate();
@@ -47,12 +48,26 @@ export default function Login() {
     navigate("/register"); // navigate to registration page
         };
 
-        
+  const handleForgotPassword = async () => {
+  if (!email) {
+    alert("Please enter your email first");
+    return;
+  }
+
+  try {
+    await sendPasswordResetEmail(auth, email);
+    alert("Password reset email sent! Check your inbox.");
+  } catch (error) {
+    alert("Error: " + error.message);
+  }
+};
+
 
   return (
-    <div>
-      <h2>Login</h2>
-      <form >
+  <div className="Page">
+    <div className="loginReturn">
+      <h2 className="login title">Login</h2>
+      <form className="formData">
         <input
           type="email"
           placeholder="Email"
@@ -65,10 +80,12 @@ export default function Login() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        <button onClick={handleLogin}>Login</button>
-        <p>Dont have a registration</p>
-        <button onClick={goToRegister}>Sign up</button>
+        <a href="#" id="forgPass" onClick={handleForgotPassword}>Forgot password?</a>
+        <button onClick={handleLogin} className="loginButton">Login</button>
+        <p>Dont have a registration?</p>
+        <button onClick={goToRegister} className="loginButton">Sign up</button>
       </form>
+    </div>
     </div>
   );
 }
