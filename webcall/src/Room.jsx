@@ -26,6 +26,37 @@ export default function Room() {
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
+  const [timeLeft, setTimeLeft] = useState(1 * 1);
+  const [isRunning, setIsRunning] = useState(false);
+  const [showPopup, setShowPopup] = useState(false);
+
+   useEffect(() => {
+    let interval;
+
+    if (isRunning && timeLeft > 0) {
+      interval = setInterval(() => {
+        setTimeLeft((prev) => prev - 1);
+      }, 1000);
+    }
+
+    if (timeLeft === 0 && isRunning) {
+      setShowPopup(true);
+    }
+
+    return () => clearInterval(interval);
+  }, [isRunning, timeLeft]);
+
+  const resetTimer = () => {
+  setIsRunning(false);
+  setTimeLeft(25 * 60); // back to 25 minutes
+  setShowPopup(false); // hide popup if it's open
+  };
+
+  const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${minutes}:${secs.toString().padStart(2, "0")}`;
+  };
 
   useEffect(() => {
     const q = query(
@@ -71,8 +102,6 @@ export default function Room() {
         alert("Cannot access camera/microphone.");
       }
     };
-
-    
 
     startLocalStream();
 
@@ -184,12 +213,40 @@ export default function Room() {
 
     setNewMessage("");
   }
+  const takeaBreak = () => {
+    resetTimer;
+    navigate("/room/breakRoom"); // navigate to registration page
+        };
+  
 
 
   return (
     <div className="roomPage">
     <div className="room-container">
       <h2 className="roomName">Room: {roomId}</h2>
+       <div className="pomodoro">
+          <h1 className="pomodoroTitle">Pomodoro timer</h1>
+          <h1 className="pomodoroTimer">{formatTime(timeLeft)}</h1>
+            <button
+              className="startPomodoro"
+              onClick={() => setIsRunning(true)}
+              disabled={isRunning}
+            >
+        Start
+      </button>
+      {showPopup && (
+        <div className="pomodoroPopup">
+          <div className="popupContent">
+            <h2>⏰ Time’s Up!</h2>
+             <p>You can either continue learning or take a small break!</p>
+             <p>The choice is yours</p>
+            <button onClick={resetTimer}>Continue</button>
+            <button onClick={takeaBreak}>5 mins</button>
+            <button onClick={takeaBreak}>15 mins</button>
+          </div>
+        </div>
+      )}
+    </div>
       <div className="videos">
         <video ref={localVideoRef} autoPlay playsInline muted className="local-video" />
         {remoteStreams.map(remote => <RemoteVideo key={remote.id} stream={remote.stream} />)}

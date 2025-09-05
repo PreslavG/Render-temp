@@ -101,7 +101,7 @@ export default function Lobby() {
         </p>
        <div className="buttons">
         <button onClick={handleLogout} className="lobbyButton">Logout</button>
-        <button onClick={() => setIsOpen(true)} className="lobbyButton">Add Button</button>
+        <button onClick={() => setIsOpen(true)} className="lobbyButton">Add Room</button>
         </div>
 
         <h2>Enjoy!</h2>
