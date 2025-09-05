@@ -82,7 +82,7 @@ export default function RegistrationForm() {
 
       <button className="registerButton" type="submit">Register</button>
          </form>
-          <a href="" onClick={goToLogin}>Already have an account?</a>
+          <a href="" type="href" onClick={goToLogin}>Already have an account?</a>
       </div>
     </div>
   );

@@ -45,7 +45,7 @@ export default function Login() {
       
     };
      const goToRegister = () => {
-    navigate("/register"); // navigate to registration page
+    navigate("/register"); 
         };
 
   const handleForgotPassword = async () => {
@@ -80,10 +80,10 @@ export default function Login() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        <a href="#" id="forgPass" onClick={handleForgotPassword}>Forgot password?</a>
+        <a href="" id="forgPass" onClick={handleForgotPassword}>Forgot password?</a>
         <button onClick={handleLogin} className="loginButton">Login</button>
         <p>Dont have a registration?</p>
-        <button onClick={goToRegister} className="loginButton">Sign up</button>
+        <button type="button" onClick={goToRegister} className="loginButton">Sign up</button>
       </form>
     </div>
     </div>
