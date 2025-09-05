@@ -82,7 +82,7 @@ export default function RegistrationForm() {
 
       <button className="registerButton" type="submit">Register</button>
          </form>
-          <button type="button" onClick={goToLogin}>Already have an account?</button>
+          <button type="button" onClick={goToLogin} className="regsterButton">Already have an account?</button>
       </div>
     </div>
   );
