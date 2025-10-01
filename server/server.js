@@ -18,7 +18,7 @@ app.get("/", (req, res) => {
 });
 
 
-const rooms = {}; // roomId -> Set(socketId)
+const rooms = {}; 
 
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
@@ -56,7 +56,6 @@ io.on("connection", (socket) => {
   });
 });
 
-// Render sets process.env.PORT
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Socket.IO server running on port ${PORT}`);

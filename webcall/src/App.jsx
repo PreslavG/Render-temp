@@ -12,7 +12,6 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Initialize Firebase auth
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -22,7 +21,7 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  if (loading) return <p>Loading...</p>; // wait for auth
+  if (loading) return <p>Loading...</p>; 
 
   return (
     <BrowserRouter>

@@ -48,8 +48,8 @@ export default function Room() {
 
   const resetTimer = () => {
   setIsRunning(false);
-  setTimeLeft(25 * 60); // back to 25 minutes
-  setShowPopup(false); // hide popup if it's open
+  setTimeLeft(25 * 60); 
+  setShowPopup(false); 
   };
 
   const formatTime = (seconds) => {
@@ -60,7 +60,7 @@ export default function Room() {
 
   useEffect(() => {
     const q = query(
-      collection(db, "rooms", roomId, "messages"),
+      collection(db, "users", auth.currentUser.uid, "rooms", roomId, "messages"),
       orderBy("createdAt", "asc")
     );
 
@@ -205,7 +205,7 @@ export default function Room() {
     e.preventDefault();
     if (newMessage.trim() === "") return;
 
-    await addDoc(collection(db, "rooms", roomId, "messages"), {
+    await addDoc(collection(db, "users", auth.currentUser.uid, "rooms", roomId, "messages"), {
       text: newMessage,
       sender: auth.currentUser?.email || "Anonymous",
       createdAt: serverTimestamp(),
@@ -215,7 +215,7 @@ export default function Room() {
   }
   const takeaBreak = () => {
     resetTimer;
-    navigate("/room/breakRoom"); // navigate to registration page
+    navigate("/room/breakRoom"); 
         };
   
 
@@ -276,7 +276,6 @@ export default function Room() {
   })}
         </div>
 
-      {/* Input */}
       <form onSubmit={sendMessage} className="sumbitMessages">
         <input
           type="text"

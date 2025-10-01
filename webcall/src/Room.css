@@ -27,7 +27,7 @@ body {
   content: "";
   position: absolute;
   inset: 0;  
-  background-image: url("https://media.discordapp.net/attachments/1267531898821808148/1413263963998912543/IMG_4174.jpg?ex=68bb4c22&is=68b9faa2&hm=87d61460991d14bef8af94607cd345cb41624905ea269c702a7eff808a76fb8b&=&format=webp&width=1423&height=800");
+  background:url(../images/background.jpg);
   background-size: cover;
   background-position: center;
   filter: blur(2px);
@@ -38,8 +38,8 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  max-width: 400px;
-  height: 97vh; /* full height */
+  max-width: 250px;
+  height: 97vh; 
   border-right: 2px solid #e5e7eb;
   padding: 16px;
   background: #fff;
@@ -48,7 +48,6 @@ body {
   border-radius: 0%;
 }
 
-/* Page flex layout */
 body, html, #root, .room-page {
   height: 100%;
   margin: 0;
@@ -59,7 +58,6 @@ body, html, #root, .room-page {
   gap: 16px;
 }
 
-/* Videos */
 .videos {
   margin-top: 20px;
   display: flex;
@@ -107,7 +105,6 @@ body, html, #root, .room-page {
   color: black;
 }
 
-/* Chat title */
 .chatboxTitle {
   font-family: 'Pelmeshka', 'Luckiest Guy', cursive, sans-serif;
   text-shadow: 2px 2px 30px rgb(255, 255, 255);
@@ -124,7 +121,6 @@ body, html, #root, .room-page {
     text-shadow: 2px 2px 20px rgb(231, 226, 226);
 }
 
-/* Messages container */
 .messagesBox {
   flex: 1;
   overflow-y: auto;
@@ -133,7 +129,6 @@ body, html, #root, .room-page {
   background-color: rgb(0, 0, 0,0.1);
 }
 
-/* Scrollbar style */
 .messagesBox::-webkit-scrollbar {
   width: 6px;
 }
@@ -156,20 +151,19 @@ body, html, #root, .room-page {
 }
 
 .message-me {
-  background-color: #2563eb;
+  background-color: #edad70;
   color: white;
-  margin-left: auto; /* align right */
+  margin-left: auto; 
   text-align: right;
 }
 
 .message-other {
-  background-color: #e5e7eb;
+  background-color: #c9eabd;
   color: #111827;
-  margin-right: auto; /* align left */
+  margin-right: auto; 
   text-align: left;
 }
 
-/* Input form */
 .sumbitMessages {
   display: flex;
   gap: 4px;
@@ -199,14 +193,14 @@ body, html, #root, .room-page {
 }
 
 .roomPage{
-  display: flex;          /* makes children inline-flex */
-  flex-wrap: wrap;        /* allows wrapping to next line if too many */
-  gap: 5px;              /* space between items */
-  align-items: center;    /* vertical alignment */
+  display: flex;          
+  flex-wrap: wrap;       
+  gap: 5px;              
+  align-items: center;   
 }
 
 .roomName{
-  display: inline-block;  /* box fits content width */
+  display: inline-block; 
   padding: 2px;
   background-color: rgba(0, 0, 0, 0.7);
   border-radius: 8px;
@@ -219,8 +213,8 @@ body, html, #root, .room-page {
   
 }
 .pomodoro {
-  position: fixed;        /* stays in place even if you scroll */
-  top: 60px;              /* distance from the top */
+  position: fixed;        
+  top: 60px;              
   right: 65vh; 
   display: flex;
   flex-direction: column;
