@@ -29,6 +29,7 @@ export default function Room() {
   const [timeLeft, setTimeLeft] = useState(1 * 1);
   const [isRunning, setIsRunning] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
+  const [wide, setWide] = useState(false);
 
    useEffect(() => {
     let interval;
@@ -224,29 +225,7 @@ export default function Room() {
     <div className="roomPage">
     <div className="room-container">
       <h2 className="roomName">Room: {roomId}</h2>
-       <div className="pomodoro">
-          <h1 className="pomodoroTitle">Pomodoro timer</h1>
-          <h1 className="pomodoroTimer">{formatTime(timeLeft)}</h1>
-            <button
-              className="startPomodoro"
-              onClick={() => setIsRunning(true)}
-              disabled={isRunning}
-            >
-        Start
-      </button>
-      {showPopup && (
-        <div className="pomodoroPopup">
-          <div className="popupContent">
-            <h2>⏰ Time’s Up!</h2>
-             <p>You can either continue learning or take a small break!</p>
-             <p>The choice is yours</p>
-            <button onClick={resetTimer}>Continue</button>
-            <button onClick={takeaBreak}>5 mins</button>
-            <button onClick={takeaBreak}>15 mins</button>
-          </div>
-        </div>
-      )}
-    </div>
+       
       <div className="videos">
         <video ref={localVideoRef} autoPlay playsInline muted className="local-video" />
         {remoteStreams.map(remote => <RemoteVideo key={remote.id} stream={remote.stream} />)}
@@ -258,9 +237,10 @@ export default function Room() {
       </div>
     </div>
 
-    <div className="chatBox">
-      <h2 className="chatboxTitle">Chat</h2>
-
+    <div className={`chatBox ${wide ? "wide" : "narrow"}`}>
+       {wide ? (
+    <div className="wideContent">
+      <h1 className="arrow-right" onClick={() => setWide(!wide)}>❌</h1>
       <div className="messagesBox">
         {messages.map((msg) => {
              const isMe = msg.sender === userEmail;
@@ -275,8 +255,7 @@ export default function Room() {
     );
   })}
         </div>
-
-      <form onSubmit={sendMessage} className="sumbitMessages">
+        <form onSubmit={sendMessage} className="sumbitMessages">
         <input
           type="text"
           value={newMessage}
@@ -291,7 +270,17 @@ export default function Room() {
           Send
         </button>
       </form>
+      {/* Add more wide-only elements here */}
     </div>
+  ) : (
+    <div className="narrowContent">
+      <img src="../public/images/chat.png" className="chatPng" onClick={() => setWide(!wide)} />
+
+      {/* Add more narrow-only elements here */}
+    </div>
+  )}
+      </div>
+
     </div>
   );
 
