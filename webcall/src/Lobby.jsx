@@ -153,24 +153,28 @@ export default function Lobby() {
 
       {/* ONLINE USERS TAB */}
       {activeTab === "online" && (
-        <div className="usersList">
-          <h1 className="buttonlistTitle">Online Now:</h1>
-          <div className="UsersContainer">
-            {users
-              .filter((u) => onlineUsers && onlineUsers[u.id]?.state === "online")
-              .map((u) => (
-                <div key={u.id} className="userCard">
-                  <img src={u.photoURL || "https://via.placeholder.com/50"} alt="User" className="userAvatar" />
-                  <div>
-                    <p className="userName">{u.name || "Anonymous"}</p>
-                    <p className="userEmail">{u.email}</p>
-                    <span className="onlineDot"></span>
-                  </div>
-                </div>
-              ))}
+  <div className="usersList">
+    <h1 className="buttonlistTitle">Online Now:</h1>
+    <div className="UsersContainer">
+      {users
+        .filter((u) => onlineUsers.includes(u.id))
+        .map((u) => (
+          <div key={u.id} className="userCard">
+            <img
+              src={u.photoURL || "https://via.placeholder.com/50"}
+              alt="User"
+              className="userAvatar"
+            />
+            <div>
+              <p className="userName">{u.name || "Anonymous"}</p>
+              <p className="userEmail">{u.email}</p>
+              <span className="onlineDot"></span>
+            </div>
           </div>
-        </div>
-      )}
+        ))}
+    </div>
+  </div>
+)}
     </div>
   );
 }
