@@ -53,16 +53,16 @@ export default function Lobby() {
   }, []);
 
   // Listen for online users
-  useEffect(() => {
-    const statusRef = ref(rtdb, "status");
-    onValue(statusRef, (snapshot) => {
-      const data = snapshot.val() || {};
-      const onlineList = Object.entries(data)
-        .filter(([_, val]) => val.state === "online")
-        .map(([uid]) => uid);
-      setOnlineUsers(onlineList);
-    });
-  }, []);
+ useEffect(() => {
+  const statusRef = ref(rtdb, "status");
+  onValue(statusRef, (snapshot) => {
+    const data = snapshot.val() || {};
+    const onlineList = Object.entries(data)
+      .filter(([_, val]) => val.state === "online")
+      .map(([uid]) => uid);
+    setOnlineUsers(onlineList);
+  });
+}, []);
 
   // Add room
   const roomAdd = async () => {
@@ -157,7 +157,7 @@ export default function Lobby() {
           <h1 className="buttonlistTitle">Online Now:</h1>
           <div className="UsersContainer">
             {users
-              .filter((u) => onlineUsers.includes(u.id))
+              .filter((u) => onlineUsers && onlineUsers[u.id]?.state === "online")
               .map((u) => (
                 <div key={u.id} className="userCard">
                   <img src={u.photoURL || "https://via.placeholder.com/50"} alt="User" className="userAvatar" />
