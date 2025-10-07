@@ -10,6 +10,8 @@ export default function Lobby() {
   const [isOpen, setIsOpen] = useState(false);
   const [text, setText] = useState("");
   const [rooms, setRooms] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [activeTab, setActiveTab] = useState("rooms"); // "rooms" or "users"
   const user = auth.currentUser;
 
   const handleLogout = async () => {
@@ -21,15 +23,16 @@ export default function Lobby() {
     }
   };
 
-  const joinRoom = (roomId) => {
-    navigate(`/room/${roomId}`);
+  const joinRoom = (room) => {
+    if (!user) return;
+    const role = room.adminId === user.uid ? "admin" : "user";
+    navigate(`/room/${room.id}`, { state: { role } });
   };
 
+  // 🔄 Fetch all rooms
   useEffect(() => {
     if (!user) return;
-
-    const roomsCollectionRef = collection(db, "users", user.uid, "rooms");
-
+    const roomsCollectionRef = collection(db, "rooms");
     const unsubscribe = onSnapshot(roomsCollectionRef, (snapshot) => {
       const data = snapshot.docs.map((doc) => ({
         id: doc.id,
@@ -37,20 +40,33 @@ export default function Lobby() {
       }));
       setRooms(data);
     });
-
     return () => unsubscribe();
   }, [user]);
 
+  // 👥 Fetch all users
+  useEffect(() => {
+    const usersCollectionRef = collection(db, "users");
+    const unsubscribe = onSnapshot(usersCollectionRef, (snapshot) => {
+      const data = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setUsers(data);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // ➕ Create a room and mark creator as admin
   const roomAdd = async () => {
     if (!user) return;
     if (text.trim() === "") return;
-
     try {
-      await addDoc(collection(db, "users", user.uid, "rooms"), {
+      await addDoc(collection(db, "rooms"), {
         name: text,
         createdAt: new Date(),
+        adminId: user.uid,
+        adminEmail: user.email,
       });
-
       setText("");
       setIsOpen(false);
     } catch (e) {
@@ -60,8 +76,7 @@ export default function Lobby() {
 
   return (
     <div className="returnLobby">
-
-
+      {/* Popup for creating a room */}
       {isOpen && (
         <div className="popup-overlay">
           <div className="popup">
@@ -81,28 +96,69 @@ export default function Lobby() {
         </div>
       )}
 
-      <div className="buttonList">
-      <div className="TitlesAndRooms">
-        <h1 className="buttonlistTitle">Your Rooms:</h1>
-        <div className="RoomsButtons">
-        {rooms.map((room) => (
-          <button
-            key={room.id}
-            className="roomButton"
-            onClick={() => joinRoom(`${room.id}`)}
-          >
-            {room.name}
-            <h1 className="roomPplcount">5👤</h1>
-          </button>
-        ))}
-        </div>
-        </div>
-        <div className="buttons">
-          <button onClick={() => setIsOpen(true)} className="lobbyButton">Add Room</button>
-          <button onClick={handleLogout} className="lobbyButton">Logout</button>
-        </div>
+      {/* Tabs */}
+      <div className="tabButtons">
+        <button
+          className={activeTab === "rooms" ? "activeTab" : ""}
+          onClick={() => setActiveTab("rooms")}
+        >
+          Rooms
+        </button>
+        <button
+          className={activeTab === "users" ? "activeTab" : ""}
+          onClick={() => setActiveTab("users")}
+        >
+          Users
+        </button>
       </div>
-      
+
+      {/* Rooms Tab */}
+      {activeTab === "rooms" && (
+        <div className="buttonList">
+          <div className="TitlesAndRooms">
+            <h1 className="buttonlistTitle">Available Rooms:</h1>
+            <div className="RoomsButtons">
+              {rooms.map((room) => (
+                <button
+                  key={room.id}
+                  className="roomButton"
+                  onClick={() => joinRoom(room)}
+                >
+                  {room.name}{" "}
+                  {room.adminId === user.uid && <span>👑</span>}
+                  <h1 className="roomPplcount">5👤</h1>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="buttons">
+            <button onClick={() => setIsOpen(true)} className="lobbyButton">
+              Add Room
+            </button>
+            <button onClick={handleLogout} className="lobbyButton">
+              Logout
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Users Tab */}
+      {activeTab === "users" && (
+        <div className="usersList">
+          <h1 className="buttonlistTitle">All Users:</h1>
+          <div className="UsersContainer">
+            {users.map((u) => (
+              <div key={u.id} className="userCard">
+                <div>
+                  <p className="userName">{u.name || "Anonymous"}</p>
+                  <p className="userEmail">{u.email}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>  
+      )}
     </div>
   );
 }
