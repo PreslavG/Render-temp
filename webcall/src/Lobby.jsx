@@ -11,6 +11,7 @@ import {
   getDocs,
   query,
   where,
+  getDoc,
 } from "firebase/firestore";
 
 import "./Lobby.css";
@@ -18,12 +19,20 @@ import "./Lobby.css";
 export default function Lobby() {
   const navigate = useNavigate();
   const [isRoomPopupOpen, setIsRoomPopupOpen] = useState(false);
+  const [isRoomListOpen, setIsRoomListOpen] = useState(false);
   const [isFriendsPopupOpen, setIsFriendsPopupOpen] = useState(false);
+  const [isUserOptionsOpen, setIsUserOptionsPopupOpen] = useState(false);
+
   const [text, setText] = useState("");
   const [rooms, setRooms] = useState([]);
   const [friends, setFriends] = useState([]);
   const [friendRequests, setFriendRequests] = useState([]);
+  const [roomInvites, setRoomInvites] = useState([]);
   const [activeTab, setActiveTab] = useState("rooms");
+
+  // ✅ added: track selected friend + selected room
+  const [selectedFriend, setSelectedFriend] = useState(null);
+  const [selectedRoomId, setSelectedRoomId] = useState("");
 
   const user = auth.currentUser;
 
@@ -51,7 +60,7 @@ export default function Lobby() {
     const unsubscribe = onSnapshot(roomsRef, (snapshot) => {
       setRooms(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
     });
-    return () => unsubscribe();
+    return unsubscribe;
   }, [user]);
 
   // 🔹 Fetch friends (real-time)
@@ -61,7 +70,7 @@ export default function Lobby() {
     const unsubscribe = onSnapshot(friendsRef, (snapshot) => {
       setFriends(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
     });
-    return () => unsubscribe();
+    return unsubscribe;
   }, [user]);
 
   // 🔹 Fetch incoming friend requests (real-time)
@@ -71,7 +80,17 @@ export default function Lobby() {
     const unsubscribe = onSnapshot(requestsRef, (snapshot) => {
       setFriendRequests(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
     });
-    return () => unsubscribe();
+    return unsubscribe;
+  }, [user]);
+
+  // 🔹 Fetch room invites (real-time)
+  useEffect(() => {
+    if (!user) return;
+    const invitesRef = collection(db, "users", user.uid, "roomInvites");
+    const unsubscribe = onSnapshot(invitesRef, (snapshot) => {
+      setRoomInvites(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+    });
+    return unsubscribe;
   }, [user]);
 
   // 🔹 Add new room
@@ -96,7 +115,6 @@ export default function Lobby() {
     if (!user || text.trim() === "") return;
 
     try {
-      // Find user by email
       const usersRef = collection(db, "users");
       const q = query(usersRef, where("email", "==", text));
       const querySnapshot = await getDocs(q);
@@ -109,13 +127,11 @@ export default function Lobby() {
       const targetUserDoc = querySnapshot.docs[0];
       const targetUserId = targetUserDoc.id;
 
-      // Prevent self-requests
       if (targetUserId === user.uid) {
         alert("You cannot send a request to yourself.");
         return;
       }
 
-      // Check if request already exists
       const existingReq = query(
         collection(db, "users", targetUserId, "friendRequests"),
         where("fromId", "==", user.uid)
@@ -126,7 +142,6 @@ export default function Lobby() {
         return;
       }
 
-      // Send the request
       await addDoc(collection(db, "users", targetUserId, "friendRequests"), {
         fromId: user.uid,
         fromEmail: user.email,
@@ -146,7 +161,6 @@ export default function Lobby() {
   // 🔹 Accept friend request
   const acceptRequest = async (req) => {
     try {
-      // Add each other as friends
       await Promise.all([
         addDoc(collection(db, "users", user.uid, "friends"), {
           friendId: req.fromId,
@@ -159,20 +173,87 @@ export default function Lobby() {
           friendEmail: user.email,
         }),
       ]);
-
-      // Remove the request
       await deleteDoc(doc(db, "users", user.uid, "friendRequests", req.id));
     } catch (e) {
       console.error("Error accepting request:", e);
     }
   };
 
-  // 🔹 Reject friend request
   const rejectRequest = async (req) => {
     try {
       await deleteDoc(doc(db, "users", user.uid, "friendRequests", req.id));
     } catch (e) {
       console.error("Error rejecting request:", e);
+    }
+  };
+
+  // 🔹 Send room invite
+  const sendRoomInvite = async () => {
+    if (!selectedFriend || !selectedRoomId) return;
+
+    try {
+      const roomRef = doc(db, "users", user.uid, "rooms", selectedRoomId);
+      const roomSnap = await getDoc(roomRef);
+
+      if (!roomSnap.exists()) {
+        alert("Room not found!");
+        return;
+      }
+
+      const roomData = roomSnap.data();
+
+      // find target user by email
+      const usersRef = collection(db, "users");
+      const q = query(usersRef, where("email", "==", selectedFriend.friendEmail));
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        alert("User not found.");
+        return;
+      }
+
+      const targetUserDoc = querySnapshot.docs[0];
+      const targetUserId = targetUserDoc.id;
+
+      // create invite in friend's Firestore path
+      await addDoc(collection(db, "users", targetUserId, "roomInvites"), {
+        fromId: user.uid,
+        fromEmail: user.email,
+        roomId: selectedRoomId,
+        roomName: roomData.name,
+        status: "pending",
+        createdAt: new Date(),
+      });
+
+      alert(`Invite sent to ${selectedFriend.friendEmail} for room ${roomData.name}`);
+      setIsRoomListOpen(false);
+      setSelectedRoomId("");
+      setSelectedFriend(null);
+    } catch (error) {
+      console.error("Error sending invite:", error);
+    }
+  };
+
+  // 🔹 Accept / Reject Room Invite
+  const acceptRoomInvite = async (invite) => {
+    try {
+      await addDoc(collection(db, "users", user.uid, "rooms"), {
+        name: invite.roomName,
+        roomId: invite.roomId,
+        invitedBy: invite.fromEmail,
+        createdAt: new Date(),
+      });
+      await deleteDoc(doc(db, "users", user.uid, "roomInvites", invite.id));
+    } catch (e) {
+      console.error("Error accepting room invite:", e);
+    }
+  };
+
+  const rejectRoomInvite = async (invite) => {
+    try {
+      await deleteDoc(doc(db, "users", user.uid, "roomInvites", invite.id));
+    } catch (e) {
+      console.error("Error rejecting room invite:", e);
     }
   };
 
@@ -216,6 +297,30 @@ export default function Lobby() {
             <div>
               <button onClick={sendFriendRequest}>Send</button>
               <button onClick={() => setIsFriendsPopupOpen(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Popup: Select Room for Friend */}
+      {isRoomListOpen && selectedFriend && (
+        <div className="popup-overlay">
+          <div className="popup">
+            <h3>Invite {selectedFriend.friendEmail} to a Room</h3>
+            <select
+              value={selectedRoomId}
+              onChange={(e) => setSelectedRoomId(e.target.value)}
+            >
+              <option value="">Select Room</option>
+              {rooms.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name}
+                </option>
+              ))}
+            </select>
+            <div>
+              <button onClick={sendRoomInvite}>Send Invite</button>
+              <button onClick={() => setIsRoomListOpen(false)}>Cancel</button>
             </div>
           </div>
         </div>
@@ -277,15 +382,22 @@ export default function Lobby() {
             <div className="UserFriends">
               {friends.length === 0 && <p>No friends yet.</p>}
               {friends.map((friend) => (
-                <span key={friend.id} className="friendList">
+                <button
+                  key={friend.id}
+                  className="friendList"
+                  onClick={() => {
+                    setSelectedFriend(friend);
+                    setIsRoomListOpen(true);
+                  }}
+                >
                   {friend.name || friend.friendEmail}
-                </span>
+                </button>
               ))}
             </div>
 
             <h1 className="buttonlistTitle">Friend Requests:</h1>
             <div className="FriendRequests">
-              {friendRequests.length === 0 && <p className="pendingRequests">No pending requests.</p>}
+              {friendRequests.length === 0 && <p>No pending requests.</p>}
               {friendRequests.map((req) => (
                 <div key={req.id} className="friendRequestItem">
                   <span>
@@ -294,6 +406,22 @@ export default function Lobby() {
                   <div>
                     <button onClick={() => acceptRequest(req)}>Accept</button>
                     <button onClick={() => rejectRequest(req)}>Reject</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <h1 className="buttonlistTitle">Room Invites:</h1>
+            <div className="RoomInvites">
+              {roomInvites.length === 0 && <p>No pending room invites.</p>}
+              {roomInvites.map((invite) => (
+                <div key={invite.id} className="roomInviteItem">
+                  <span>
+                    {invite.fromEmail} invited you to <b>{invite.roomName}</b>
+                  </span>
+                  <div>
+                    <button onClick={() => acceptRoomInvite(invite)}>Accept</button>
+                    <button onClick={() => rejectRoomInvite(invite)}>Reject</button>
                   </div>
                 </div>
               ))}
