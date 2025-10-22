@@ -292,3 +292,9 @@
   font-size: 0.85rem;
   color: gray;
 }
+
+.pendingRequests {
+  font-size: 1.2rem;
+  color: rgb(228, 239, 231);
+  text-shadow: 2px 2px 20px rgb(0, 0, 0);
+}

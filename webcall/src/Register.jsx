@@ -19,14 +19,11 @@ export default function RegistrationForm() {
     }
 
     try {
-      // Create user in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Update display name in Auth profile
       await updateProfile(user, { displayName: name });
 
-      // Create user document in Firestore
       await setDoc(doc(db, "users", user.uid), {
         uid: user.uid,
         name: name,
@@ -36,12 +33,10 @@ export default function RegistrationForm() {
 
       alert(`Registered successfully! Welcome, ${name}`);
 
-      // Reset fields
       setName("");
       setEmail("");
       setPassword("");
 
-      // Redirect to login (or dashboard, your choice)
       navigate("/login");
 
     } catch (error) {

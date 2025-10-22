@@ -1,22 +1,33 @@
 import { useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
-import { auth, db, rtdb } from "./scripts/firebase";
+import { auth, db } from "./scripts/firebase";
 import { useState, useEffect } from "react";
-import { collection, addDoc, onSnapshot } from "firebase/firestore";
-import { ref, onValue } from "firebase/database";
+import {
+  collection,
+  addDoc,
+  onSnapshot,
+  doc,
+  deleteDoc,
+  getDocs,
+  query,
+  where,
+} from "firebase/firestore";
+
 import "./Lobby.css";
 
 export default function Lobby() {
   const navigate = useNavigate();
-  const [isOpen, setIsOpen] = useState(false);
+  const [isRoomPopupOpen, setIsRoomPopupOpen] = useState(false);
+  const [isFriendsPopupOpen, setIsFriendsPopupOpen] = useState(false);
   const [text, setText] = useState("");
   const [rooms, setRooms] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [onlineUsers, setOnlineUsers] = useState([]);
+  const [friends, setFriends] = useState([]);
+  const [friendRequests, setFriendRequests] = useState([]);
   const [activeTab, setActiveTab] = useState("rooms");
+
   const user = auth.currentUser;
 
-  // Sign out
+  // 🔹 Logout
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -26,67 +37,152 @@ export default function Lobby() {
     }
   };
 
-  // Join room
+  // 🔹 Join room
   const joinRoom = (room) => {
     if (!user) return;
     const role = room.adminId === user.uid ? "admin" : "user";
     navigate(`/room/${room.id}`, { state: { role } });
   };
 
-  // Fetch rooms
+  // 🔹 Fetch user rooms (real-time)
   useEffect(() => {
     if (!user) return;
-    const roomsRef = collection(db, "rooms");
+    const roomsRef = collection(db, "users", user.uid, "rooms");
     const unsubscribe = onSnapshot(roomsRef, (snapshot) => {
       setRooms(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
     });
     return () => unsubscribe();
   }, [user]);
 
-  // Fetch all users
+  // 🔹 Fetch friends (real-time)
   useEffect(() => {
-    const usersRef = collection(db, "users");
-    const unsubscribe = onSnapshot(usersRef, (snapshot) => {
-      setUsers(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+    if (!user) return;
+    const friendsRef = collection(db, "users", user.uid, "friends");
+    const unsubscribe = onSnapshot(friendsRef, (snapshot) => {
+      setFriends(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
     });
     return () => unsubscribe();
-  }, []);
+  }, [user]);
 
-  // Listen for online users
- useEffect(() => {
-  const statusRef = ref(rtdb, "status");
-  onValue(statusRef, (snapshot) => {
-    const data = snapshot.val() || {};
-    const onlineList = Object.entries(data)
-      .filter(([_, val]) => val.state === "online")
-      .map(([uid]) => uid);
-    setOnlineUsers(onlineList);
-  });
-}, []);
-
-  // Add room
-  const roomAdd = async () => {
+  // 🔹 Fetch incoming friend requests (real-time)
+  useEffect(() => {
     if (!user) return;
-    if (text.trim() === "") return;
+    const requestsRef = collection(db, "users", user.uid, "friendRequests");
+    const unsubscribe = onSnapshot(requestsRef, (snapshot) => {
+      setFriendRequests(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+    });
+    return () => unsubscribe();
+  }, [user]);
+
+  // 🔹 Add new room
+  const roomAdd = async () => {
+    if (!user || text.trim() === "") return;
     try {
-      await addDoc(collection(db, "rooms"), {
+      await addDoc(collection(db, "users", user.uid, "rooms"), {
         name: text,
         createdAt: new Date(),
         adminId: user.uid,
         adminEmail: user.email,
       });
       setText("");
-      setIsOpen(false);
+      setIsRoomPopupOpen(false);
     } catch (e) {
       console.error("Error adding room:", e);
     }
   };
 
+  // 🔹 Send friend request
+  const sendFriendRequest = async () => {
+    if (!user || text.trim() === "") return;
+
+    try {
+      // Find user by email
+      const usersRef = collection(db, "users");
+      const q = query(usersRef, where("email", "==", text));
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        alert("No user found with that email.");
+        return;
+      }
+
+      const targetUserDoc = querySnapshot.docs[0];
+      const targetUserId = targetUserDoc.id;
+
+      // Prevent self-requests
+      if (targetUserId === user.uid) {
+        alert("You cannot send a request to yourself.");
+        return;
+      }
+
+      // Check if request already exists
+      const existingReq = query(
+        collection(db, "users", targetUserId, "friendRequests"),
+        where("fromId", "==", user.uid)
+      );
+      const existingSnapshot = await getDocs(existingReq);
+      if (!existingSnapshot.empty) {
+        alert("Friend request already sent.");
+        return;
+      }
+
+      // Send the request
+      await addDoc(collection(db, "users", targetUserId, "friendRequests"), {
+        fromId: user.uid,
+        fromEmail: user.email,
+        fromName: user.displayName || "Anonymous",
+        status: "pending",
+        createdAt: new Date(),
+      });
+
+      alert("Friend request sent!");
+      setText("");
+      setIsFriendsPopupOpen(false);
+    } catch (e) {
+      console.error("Error sending friend request:", e);
+    }
+  };
+
+  // 🔹 Accept friend request
+  const acceptRequest = async (req) => {
+    try {
+      // Add each other as friends
+      await Promise.all([
+        addDoc(collection(db, "users", user.uid, "friends"), {
+          friendId: req.fromId,
+          name: req.fromName,
+          friendEmail: req.fromEmail,
+        }),
+        addDoc(collection(db, "users", req.fromId, "friends"), {
+          friendId: user.uid,
+          name: user.displayName || "Anonymous",
+          friendEmail: user.email,
+        }),
+      ]);
+
+      // Remove the request
+      await deleteDoc(doc(db, "users", user.uid, "friendRequests", req.id));
+    } catch (e) {
+      console.error("Error accepting request:", e);
+    }
+  };
+
+  // 🔹 Reject friend request
+  const rejectRequest = async (req) => {
+    try {
+      await deleteDoc(doc(db, "users", user.uid, "friendRequests", req.id));
+    } catch (e) {
+      console.error("Error rejecting request:", e);
+    }
+  };
+
+  // =======================================================
+  // 🖥️ RENDER
+  // =======================================================
   return (
     <div className="returnLobby">
-
-      {/* Room popup */}
-      {isOpen && (
+      {/* Popup: Add Room */}
+      {isRoomPopupOpen && (
         <div className="popup-overlay">
           <div className="popup">
             <h3>Enter room name:</h3>
@@ -99,7 +195,27 @@ export default function Lobby() {
             />
             <div>
               <button onClick={roomAdd}>Submit</button>
-              <button onClick={() => setIsOpen(false)}>Cancel</button>
+              <button onClick={() => setIsRoomPopupOpen(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Popup: Send Friend Request */}
+      {isFriendsPopupOpen && (
+        <div className="popup-overlay">
+          <div className="popup">
+            <h3>Your ID: {user.uid}</h3>
+            <h3>Send Friend Request</h3>
+            <input
+              type="text"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="Enter friend's email..."
+            />
+            <div>
+              <button onClick={sendFriendRequest}>Send</button>
+              <button onClick={() => setIsFriendsPopupOpen(false)}>Cancel</button>
             </div>
           </div>
         </div>
@@ -107,19 +223,35 @@ export default function Lobby() {
 
       {/* Tabs */}
       <div className="tabButtons">
-        <button className={activeTab === "rooms" ? "activeTab" : ""} onClick={() => setActiveTab("rooms")}>Rooms</button>
-        <button className={activeTab === "users" ? "activeTab" : ""} onClick={() => setActiveTab("users")}>Users</button>
-        <button className={activeTab === "online" ? "activeTab" : ""} onClick={() => setActiveTab("online")}>Online</button>
+        <button
+          className={activeTab === "rooms" ? "activeTab" : ""}
+          onClick={() => setActiveTab("rooms")}
+        >
+          Rooms
+        </button>
+        <button
+          className={activeTab === "friends" ? "activeTab" : ""}
+          onClick={() => setActiveTab("friends")}
+        >
+          Friends
+        </button>
+        <button className="AddFriends" onClick={() => setIsFriendsPopupOpen(true)}>
+          +
+        </button>
       </div>
 
-      {/* ROOMS TAB */}
+      {/* Rooms Tab */}
       {activeTab === "rooms" && (
         <div className="buttonList">
           <div className="TitlesAndRooms">
             <h1 className="buttonlistTitle">Available Rooms:</h1>
             <div className="RoomsButtons">
               {rooms.map((room) => (
-                <button key={room.id} className="roomButton" onClick={() => joinRoom(room)}>
+                <button
+                  key={room.id}
+                  className="roomButton"
+                  onClick={() => joinRoom(room)}
+                >
                   {room.name} {room.adminId === user.uid && <span>👑</span>}
                   <h1 className="roomPplcount">5👤</h1>
                 </button>
@@ -127,54 +259,48 @@ export default function Lobby() {
             </div>
           </div>
           <div className="buttons">
-            <button onClick={() => setIsOpen(true)} className="lobbyButton">Add Room</button>
-            <button onClick={handleLogout} className="lobbyButton">Logout</button>
+            <button onClick={() => setIsRoomPopupOpen(true)} className="lobbyButton">
+              Add Room
+            </button>
+            <button onClick={handleLogout} className="lobbyButton">
+              Logout
+            </button>
           </div>
         </div>
       )}
 
-      {/* USERS TAB */}
-      {activeTab === "users" && (
-        <div className="usersList">
-          <h1 className="buttonlistTitle">All Users:</h1>
-          <div className="UsersContainer">
-            {users.map((u) => (
-              <div key={u.id} className="userCard">
-                <img src={u.photoURL || "https://via.placeholder.com/50"} alt="User" className="userAvatar" />
-                <div>
-                  <p className="userName">{u.name || "Anonymous"}</p>
-                  <p className="userEmail">{u.email}</p>
+      {/* Friends Tab */}
+      {activeTab === "friends" && (
+        <div className="buttonList">
+          <div className="Friends">
+            <h1 className="buttonlistTitle">Friends:</h1>
+            <div className="UserFriends">
+              {friends.length === 0 && <p>No friends yet.</p>}
+              {friends.map((friend) => (
+                <span key={friend.id} className="friendList">
+                  {friend.name || friend.friendEmail}
+                </span>
+              ))}
+            </div>
+
+            <h1 className="buttonlistTitle">Friend Requests:</h1>
+            <div className="FriendRequests">
+              {friendRequests.length === 0 && <p className="pendingRequests">No pending requests.</p>}
+              {friendRequests.map((req) => (
+                <div key={req.id} className="friendRequestItem">
+                  <span>
+                    {req.fromName} ({req.fromEmail})
+                  </span>
+                  <div>
+                    <button onClick={() => acceptRequest(req)}>Accept</button>
+                    <button onClick={() => rejectRequest(req)}>Reject</button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ONLINE USERS TAB */}
-      {activeTab === "online" && (
-  <div className="usersList">
-    <h1 className="buttonlistTitle">Online Now:</h1>
-    <div className="UsersContainer">
-      {users
-        .filter((u) => onlineUsers.includes(u.id))
-        .map((u) => (
-          <div key={u.id} className="userCard">
-            <img
-              src={u.photoURL || "https://via.placeholder.com/50"}
-              alt="User"
-              className="userAvatar"
-            />
-            <div>
-              <p className="userName">{u.name || "Anonymous"}</p>
-              <p className="userEmail">{u.email}</p>
-              <span className="onlineDot"></span>
+              ))}
             </div>
           </div>
-        ))}
-    </div>
-  </div>
-)}
+        </div>
+      )}
     </div>
   );
 }
