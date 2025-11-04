@@ -224,7 +224,6 @@ export default function Room() {
   return (
     <div className="roomPage">
     <div className="room-container">
-      <h2 className="roomName">Room: {roomId}</h2>
        
       <div className="videos">
         <video ref={localVideoRef} autoPlay playsInline muted className="local-video" />
@@ -274,7 +273,7 @@ export default function Room() {
     </div>
   ) : (
     <div className="narrowContent">
-      <img src="../public/images/chat.png" className="chatPng" onClick={() => setWide(!wide)} />
+      <img src="../public/images/chatPng.png" className="chatPng" onClick={() => setWide(!wide)} />
 
       {/* Add more narrow-only elements here */}
     </div>

@@ -80,8 +80,11 @@ body {
 }
 
 .chatBox.narrow {
-  max-width: 60px;
-  height: 97vh;    
+  max-width: 52px;
+  height: 100vh;    
+  display: flex;
+  justify-content: center;
+  align-items: start;
 }
 
 .arrow-right{
@@ -95,10 +98,11 @@ body {
 
 .chatPng{
   width: 50px;
-  height: 55px;
-  margin-left: 3px;
+  height: 50px;
   padding: 0;
   cursor: pointer;
+  border-radius: 100%;
+  margin-right: 2px;
 }
 
 .messagesBox {
@@ -193,8 +197,8 @@ body, html, #root, .room-page {
 
 .local-video,
 .remote-video {
-  width: 320px;
-  height: 240px;
+  width: 1000px;
+  height: 500px;
   border-radius: 12px;
   border: 4px solid rgba(0, 0, 0, 0.4);
   object-fit: cover;
@@ -238,6 +242,10 @@ body, html, #root, .room-page {
   flex-wrap: wrap;       
   gap: 5px;              
   align-items: center;
+  background-image: linear-gradient(rgba(27, 26, 26, 0.6), rgba(169, 52, 22, 0.4) ), url(../images/background.jpg);
+  background-size: cover;
+  background-position: right 45%; /* 👈 show right side of image */
+  background-repeat: no-repeat;
 }
 
 .roomName{

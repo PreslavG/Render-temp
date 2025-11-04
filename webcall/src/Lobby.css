@@ -322,3 +322,15 @@
   align-items: center;
   gap: 10px;
 }
+
+.noPendMessages{
+  color: rgb(255, 255, 255);
+  align-items: center;
+  text-align: center;
+}
+
+.FriendRequest{
+   display: flex;
+   align-items: center;
+   justify-content: center;
+}

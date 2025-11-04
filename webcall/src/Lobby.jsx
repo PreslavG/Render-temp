@@ -397,7 +397,7 @@ export default function Lobby() {
 
             <h1 className="buttonlistTitle">Friend Requests:</h1>
             <div className="FriendRequests">
-              {friendRequests.length === 0 && <p>No pending requests.</p>}
+              {friendRequests.length === 0 && <p className="noPendMessages">No pending requests.</p>}
               {friendRequests.map((req) => (
                 <div key={req.id} className="friendRequestItem">
                   <span>
@@ -413,7 +413,7 @@ export default function Lobby() {
 
             <h1 className="buttonlistTitle">Room Invites:</h1>
             <div className="RoomInvites">
-              {roomInvites.length === 0 && <p>No pending room invites.</p>}
+              {roomInvites.length === 0 && <p className="noPendMessages">No pending room invites.</p>}
               {roomInvites.map((invite) => (
                 <div key={invite.id} className="roomInviteItem">
                   <span>
