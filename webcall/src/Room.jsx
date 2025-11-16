@@ -10,6 +10,8 @@ import {
   query,
   orderBy,
   onSnapshot,
+  updateDoc,
+  increment,
 } from "firebase/firestore";
 import "./Room.css";
 

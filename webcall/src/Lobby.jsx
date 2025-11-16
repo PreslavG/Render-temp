@@ -12,9 +12,54 @@ import {
   query,
   where,
   getDoc,
+  updateDoc,
+  increment,
 } from "firebase/firestore";
 
 import "./Lobby.css";
+
+function HourlyClock() {
+  const [time, setTime] = useState(new Date());
+
+  useEffect(() => {
+    const tickInterval = setInterval(() => setTime(new Date()), 1000);
+
+    
+    const showHourlyMessage = () => {
+      const current = new Date();
+      const hour = current.getHours().toString().padStart(2, "0");
+      alert(`🕒 It's now ${hour}:00!`);
+    };
+
+    const now = new Date();
+    const msUntilNextHour =
+      (60 - now.getMinutes()) * 60 * 1000 -
+      now.getSeconds() * 1000 -
+      now.getMilliseconds();
+
+    const timeoutId = setTimeout(() => {
+      showHourlyMessage();
+      const hourlyInterval = setInterval(showHourlyMessage, 60 * 60 * 1000);
+      return () => clearInterval(hourlyInterval);
+    }, msUntilNextHour);
+
+    return () => {
+      clearTimeout(timeoutId);
+      clearInterval(tickInterval);
+    };
+  }, []);
+
+  const formattedTime = time.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+
+  return <div className="clock">{formattedTime}</div>;
+}
+
+
 
 export default function Lobby() {
   const navigate = useNavigate();
@@ -22,21 +67,20 @@ export default function Lobby() {
   const [isRoomListOpen, setIsRoomListOpen] = useState(false);
   const [isFriendsPopupOpen, setIsFriendsPopupOpen] = useState(false);
   const [isUserOptionsOpen, setIsUserOptionsPopupOpen] = useState(false);
+  const [roomFullPopup, setRoomFullPopup] = useState(false);
 
-  const [text, setText] = useState("");
+  const [text, setText] = useState(""); 
   const [rooms, setRooms] = useState([]);
   const [friends, setFriends] = useState([]);
   const [friendRequests, setFriendRequests] = useState([]);
   const [roomInvites, setRoomInvites] = useState([]);
   const [activeTab, setActiveTab] = useState("rooms");
 
-  // ✅ added: track selected friend + selected room
   const [selectedFriend, setSelectedFriend] = useState(null);
   const [selectedRoomId, setSelectedRoomId] = useState("");
 
   const user = auth.currentUser;
 
-  // 🔹 Logout
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -46,14 +90,18 @@ export default function Lobby() {
     }
   };
 
-  // 🔹 Join room
-  const joinRoom = (room) => {
-    if (!user) return;
-    const role = room.adminId === user.uid ? "admin" : "user";
-    navigate(`/room/${room.id}`, { state: { role } });
-  };
+  const joinRoom = async (room) => {
+  if (!user) return;
 
-  // 🔹 Fetch user rooms (real-time)
+  if (room.activeUsers >= room.capacity) {
+    alert("❗ Room is full! ( " + room.activeUsers + "/" + room.capacity + " )");
+    return;
+  }
+
+  const role = room.adminId === user.uid ? "admin" : "user";
+  navigate(`/room/${room.id}`, { state: { role } });
+};
+
   useEffect(() => {
     if (!user) return;
     const roomsRef = collection(db, "users", user.uid, "rooms");
@@ -63,7 +111,6 @@ export default function Lobby() {
     return unsubscribe;
   }, [user]);
 
-  // 🔹 Fetch friends (real-time)
   useEffect(() => {
     if (!user) return;
     const friendsRef = collection(db, "users", user.uid, "friends");
@@ -73,7 +120,6 @@ export default function Lobby() {
     return unsubscribe;
   }, [user]);
 
-  // 🔹 Fetch incoming friend requests (real-time)
   useEffect(() => {
     if (!user) return;
     const requestsRef = collection(db, "users", user.uid, "friendRequests");
@@ -83,7 +129,6 @@ export default function Lobby() {
     return unsubscribe;
   }, [user]);
 
-  // 🔹 Fetch room invites (real-time)
   useEffect(() => {
     if (!user) return;
     const invitesRef = collection(db, "users", user.uid, "roomInvites");
@@ -102,6 +147,8 @@ export default function Lobby() {
         createdAt: new Date(),
         adminId: user.uid,
         adminEmail: user.email,
+        capacity: 5,     
+        activeUsers: 0,
       });
       setText("");
       setIsRoomPopupOpen(false);
@@ -256,7 +303,6 @@ export default function Lobby() {
       console.error("Error rejecting room invite:", e);
     }
   };
-
   // =======================================================
   // 🖥️ RENDER
   // =======================================================
@@ -282,6 +328,11 @@ export default function Lobby() {
         </div>
       )}
 
+      <div className="clock">
+        
+        <HourlyClock />
+      </div>
+      
       {/* Popup: Send Friend Request */}
       {isFriendsPopupOpen && (
         <div className="popup-overlay">
@@ -352,13 +403,14 @@ export default function Lobby() {
             <h1 className="buttonlistTitle">Available Rooms:</h1>
             <div className="RoomsButtons">
               {rooms.map((room) => (
+                
                 <button
                   key={room.id}
                   className="roomButton"
                   onClick={() => joinRoom(room)}
                 >
                   {room.name} {room.adminId === user.uid && <span>👑</span>}
-                  <h1 className="roomPplcount">5👤</h1>
+                  <h1 className="roomPplcount">{room.activeUsers}/{room.capacity}👤</h1>
                 </button>
               ))}
             </div>
@@ -373,6 +425,16 @@ export default function Lobby() {
           </div>
         </div>
       )}
+
+      {roomFullPopup && (
+  <div className="popup-overlay">
+    <div className="popup">
+      <h2>🚫 Room is full!</h2>
+      <p>This room has reached its maximum capacity.</p>
+      <button onClick={() => setRoomFullPopup(false)}>Okay</button>
+    </div>
+  </div>
+)}
 
       {/* Friends Tab */}
       {activeTab === "friends" && (
