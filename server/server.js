@@ -17,7 +17,6 @@ app.get("/", (req, res) => {
   res.send("Socket.IO server is running 🚀");
 });
 
-
 const rooms = {}; 
 
 io.on("connection", (socket) => {
@@ -25,11 +24,18 @@ io.on("connection", (socket) => {
 
   socket.on("join-room", ({ roomId, email }) => {
     if (!rooms[roomId]) rooms[roomId] = new Set();
+
+    // 1️⃣ Уведомяване на новия за вече в стаята
+    const existingUsers = Array.from(rooms[roomId]);
+    socket.emit("existing-users", existingUsers);
+
+    // 2️⃣ Добавяне на новия към стаята
     rooms[roomId].add(socket.id);
     socket.join(roomId);
     socket.roomId = roomId;
     socket.email = email;
 
+    // 3️⃣ Уведомяване на останалите за новия
     socket.to(roomId).emit("user-joined", { peerId: socket.id, email });
   });
 

@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
-import { auth, db } from "./scripts/firebase";
+import { auth, db, set } from "./scripts/firebase";
 import { useState, useEffect } from "react";
 import {
   collection,
@@ -9,6 +9,7 @@ import {
   doc,
   deleteDoc,
   getDocs,
+  setDoc,
   query,
   where,
   getDoc,
@@ -68,6 +69,7 @@ export default function Lobby() {
   const [isFriendsPopupOpen, setIsFriendsPopupOpen] = useState(false);
   const [isUserOptionsOpen, setIsUserOptionsPopupOpen] = useState(false);
   const [roomFullPopup, setRoomFullPopup] = useState(false);
+  const [activeUsers, setActiveUsers] = useState({});
 
   const [text, setText] = useState(""); 
   const [rooms, setRooms] = useState([]);
@@ -91,24 +93,34 @@ export default function Lobby() {
   };
 
   const joinRoom = async (room) => {
-  if (!user) return;
+  const activeUsersRef = collection(db, "users", user.uid, "rooms", room.id, "activeUsers");
+  const snapshot = await getDocs(activeUsersRef);
 
-  if (room.activeUsers >= room.capacity) {
-    alert("❗ Room is full! ( " + room.activeUsers + "/" + room.capacity + " )");
+  // You need to compute "total active users" first using the effect above or helper function
+  const totalActive = activeUsers[room.id] || 0;
+
+  if (totalActive >= room.capacity) {
+    alert("Room is full!");
     return;
   }
 
-  const role = room.adminId === user.uid ? "admin" : "user";
-  navigate(`/room/${room.id}`, { state: { role } });
+  await setDoc(doc(db, "users", user.uid,"rooms", room.id, "activeUsers", user.uid ), {
+    uid: user.uid,
+    email: user.email,
+    name: user.displayName,
+  });
+
+  navigate(`/room/${room.id}`, { state: { role: room.adminId === user.uid ? "admin" : "user" } });
 };
 
   useEffect(() => {
     if (!user) return;
     const roomsRef = collection(db, "users", user.uid, "rooms");
     const unsubscribe = onSnapshot(roomsRef, (snapshot) => {
-      setRooms(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+      const RoomData = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+       setRooms(RoomData);
     });
-    return unsubscribe;
+    return () => unsubscribe();
   }, [user]);
 
   useEffect(() => {
@@ -138,7 +150,35 @@ export default function Lobby() {
     return unsubscribe;
   }, [user]);
 
-  // 🔹 Add new room
+  useEffect(() => {
+  if (!user) return;
+
+  // Fetch all users in the system
+  const usersRef = collection(db, "users");
+
+  const unsubscribeList = rooms.map(room => {
+    // Listen to all users' subcollections for this room
+    const unsub = onSnapshot(usersRef, async snapshot => {
+      let total = 0;
+
+      for (const userDoc of snapshot.docs) {
+        const activeUsersRef = collection(db, "users", userDoc.id, "rooms", room.id, "activeUsers");
+        const activeSnap = await getDocs(activeUsersRef);
+        total += activeSnap.size;
+      }
+
+      setActiveUsers(prev => ({
+        ...prev,
+        [room.id]: total
+      }));
+    });
+
+    return unsub;
+  });
+
+  return () => unsubscribeList.forEach(unsub => unsub());
+}, [rooms]);
+
   const roomAdd = async () => {
     if (!user || text.trim() === "") return;
     try {
@@ -148,7 +188,6 @@ export default function Lobby() {
         adminId: user.uid,
         adminEmail: user.email,
         capacity: 5,     
-        activeUsers: 0,
       });
       setText("");
       setIsRoomPopupOpen(false);
@@ -156,6 +195,7 @@ export default function Lobby() {
       console.error("Error adding room:", e);
     }
   };
+
 
   // 🔹 Send friend request
   const sendFriendRequest = async () => {
@@ -402,17 +442,18 @@ export default function Lobby() {
           <div className="TitlesAndRooms">
             <h1 className="buttonlistTitle">Available Rooms:</h1>
             <div className="RoomsButtons">
-              {rooms.map((room) => (
-                
-                <button
-                  key={room.id}
-                  className="roomButton"
-                  onClick={() => joinRoom(room)}
-                >
-                  {room.name} {room.adminId === user.uid && <span>👑</span>}
-                  <h1 className="roomPplcount">{room.activeUsers}/{room.capacity}👤</h1>
-                </button>
-              ))}
+             {rooms.map((room) => (
+               <button
+                 key={room.id}
+                 className="roomButton"
+                 onClick={() =>{alert(activeUsers[room.id]);joinRoom(room)}}
+               >
+               {room.name} {room.adminId === user.uid && <span>👑</span>}
+                   <h1 className="roomPplcount">
+                       {activeUsers[room.id]}/{room.capacity}👤
+                   </h1>
+                 </button>
+                ))}
             </div>
           </div>
           <div className="buttons">

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import socket from "./scripts/socket";
 import { db, auth } from "./scripts/firebase";
 import { onAuthStateChanged } from "firebase/auth";
@@ -9,15 +9,19 @@ import {
   serverTimestamp,
   query,
   orderBy,
-  onSnapshot,
   updateDoc,
   increment,
+  doc,
+  onSnapshot,
+  deleteDoc,
 } from "firebase/firestore";
 import "./Room.css";
 
 export default function Room() {
   const { roomId } = useParams();
   const navigate = useNavigate();
+  const { state } = useLocation();
+  const roomOwnerId = state?.roomOwnerId; // room owner's UID
   const [userEmail, setUserEmail] = useState(null);
 
   const localVideoRef = useRef();
@@ -28,31 +32,25 @@ export default function Room() {
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
-  const [timeLeft, setTimeLeft] = useState(1 * 1);
+  const [timeLeft, setTimeLeft] = useState(1);
   const [isRunning, setIsRunning] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
   const [wide, setWide] = useState(false);
 
-   useEffect(() => {
+  // Timer logic
+  useEffect(() => {
     let interval;
-
     if (isRunning && timeLeft > 0) {
-      interval = setInterval(() => {
-        setTimeLeft((prev) => prev - 1);
-      }, 1000);
+      interval = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
     }
-
-    if (timeLeft === 0 && isRunning) {
-      setShowPopup(true);
-    }
-
+    if (timeLeft === 0 && isRunning) setShowPopup(true);
     return () => clearInterval(interval);
   }, [isRunning, timeLeft]);
 
   const resetTimer = () => {
-  setIsRunning(false);
-  setTimeLeft(25 * 60); 
-  setShowPopup(false); 
+    setIsRunning(false);
+    setTimeLeft(25 * 60);
+    setShowPopup(false);
   };
 
   const formatTime = (seconds) => {
@@ -61,34 +59,34 @@ export default function Room() {
     return `${minutes}:${secs.toString().padStart(2, "0")}`;
   };
 
+  // Firestore: Messages listener
   useEffect(() => {
-    const q = query(
-      collection(db, "users", auth.currentUser.uid, "rooms", roomId, "messages"),
-      orderBy("createdAt", "asc")
-    );
+  // check for both user and roomId
+  if (!auth.currentUser || !roomId) return;
 
-    const unsubscribe1 = onSnapshot(q, (snapshot) => {
-      const msgs = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setMessages(msgs);
-    });
+  const messagesRef = collection(db, "users", auth.currentUser.uid, "rooms", roomId, "messages");
+  const q = query(messagesRef, orderBy("createdAt", "asc"));
 
-    return () => unsubscribe1();
-  }, [roomId]);
-  
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    const msgs = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    setMessages(msgs);
+  });
+
+  return () => unsubscribe();
+}, [roomId]);
+  // Auth listener
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        navigate("/login");
-      } else {
-        setUserEmail(user.email);
-      }
+      if (!user) navigate("/login");
+      else setUserEmail(user.email);
     });
     return () => unsubscribe();
   }, [navigate]);
 
+  // WebRTC + socket
   useEffect(() => {
     if (!userEmail) return;
 
@@ -100,6 +98,10 @@ export default function Room() {
 
         if (!socket.connected) socket.connect();
         socket.emit("join-room", { roomId, email: userEmail });
+
+        if (roomOwnerId) {
+          const roomRef = doc(db, "users", roomOwnerId, "rooms", roomId);
+        }
       } catch (err) {
         console.error("Cannot access camera/microphone:", err);
         alert("Cannot access camera/microphone.");
@@ -126,28 +128,29 @@ export default function Room() {
       localStreamRef.current?.getTracks().forEach(track => track.stop());
       socket.emit("leave-room", { roomId });
 
+      if (roomOwnerId) {
+        const roomRef = doc(db, "users", roomOwnerId, "rooms", roomId);
+      }
+
       socket.off("user-joined", handleUserJoined);
       socket.off("offer", handleOffer);
       socket.off("answer", handleAnswer);
       socket.off("ice-candidate", handleIce);
       socket.off("user-left", handleUserLeft);
     };
-  }, [roomId, userEmail]);
+  }, [roomId, userEmail, roomOwnerId]);
 
+  // WebRTC peer functions
   const createPeerConnection = (peerId) => {
     if (peerConnections.current[peerId]) return peerConnections.current[peerId];
 
     const pc = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
-
     localStreamRef.current?.getTracks().forEach(track => {
       if (!pc.getSenders().some(sender => sender.track === track)) pc.addTrack(track, localStreamRef.current);
     });
 
     pc.ontrack = (event) => {
-      setRemoteStreams(prev => [
-        ...prev.filter(s => s.id !== peerId),
-        { id: peerId, stream: event.streams[0] }
-      ]);
+      setRemoteStreams(prev => [...prev.filter(s => s.id !== peerId), { id: peerId, stream: event.streams[0] }]);
     };
 
     pc.onicecandidate = (event) => {
@@ -186,105 +189,92 @@ export default function Room() {
     setRemoteStreams(prev => prev.filter(s => s.id !== peerId));
   };
 
-  const leaveRoom = () => {
+  // Room controls
+  const leaveRoom = async () => {
     Object.values(peerConnections.current).forEach(pc => pc.close());
     peerConnections.current = {};
     localStreamRef.current?.getTracks().forEach(track => track.stop());
     socket.emit("leave-room", { roomId });
+
+    await deleteDoc(doc(db, "users", auth.currentUser.uid, "rooms", roomId, "activeUsers", auth.currentUser.uid));
+
     navigate("/lobby");
   };
 
   const toggleMute = () => {
-    localStreamRef.current?.getAudioTracks().forEach(track => { track.enabled = !track.enabled });
+    localStreamRef.current?.getAudioTracks().forEach(track => track.enabled = !track.enabled);
     setIsMuted(prev => !prev);
   };
 
   const toggleVideo = () => {
-    localStreamRef.current?.getVideoTracks().forEach(track => { track.enabled = !track.enabled });
+    localStreamRef.current?.getVideoTracks().forEach(track => track.enabled = !track.enabled);
     setIsVideoOff(prev => !prev);
   };
 
-  async function sendMessage(e) {
+  // Messages
+  const sendMessage = async (e) => {
     e.preventDefault();
-    if (newMessage.trim() === "") return;
+    if (!newMessage.trim()) return;
+    if (!roomOwnerId) return;
 
-    await addDoc(collection(db, "users", auth.currentUser.uid, "rooms", roomId, "messages"), {
+    await addDoc(collection(db, "users", roomOwnerId, "rooms", roomId, "messages"), {
       text: newMessage,
       sender: auth.currentUser?.email || "Anonymous",
       createdAt: serverTimestamp(),
     });
 
     setNewMessage("");
-  }
-  const takeaBreak = () => {
-    resetTimer;
-    navigate("/room/breakRoom"); 
-        };
-  
+  };
 
-
+  // UI
   return (
     <div className="roomPage">
-    <div className="room-container">
-       
-      <div className="videos">
-        <video ref={localVideoRef} autoPlay playsInline muted className="local-video" />
-        {remoteStreams.map(remote => <RemoteVideo key={remote.id} stream={remote.stream} />)}
-      </div>
-      <div className="controls">
-        <button onClick={leaveRoom}>Leave Room</button>
-        <button onClick={toggleVideo}>{isVideoOff ? "Start Video" : "Stop Video"}</button>
-        <button onClick={toggleMute}>{isMuted ? "Unmute" : "Mute"}</button>
-      </div>
-    </div>
-
-    <div className={`chatBox ${wide ? "wide" : "narrow"}`}>
-       {wide ? (
-    <div className="wideContent">
-      <h1 className="arrow-right" onClick={() => setWide(!wide)}>❌</h1>
-      <div className="messagesBox">
-        {messages.map((msg) => {
-             const isMe = msg.sender === userEmail;
-        return (
-          <div
-        key={msg.id}
-        className={`message ${isMe ? "message-me" : "message-other"}`}
-         >
-        {!isMe && <strong>{msg.sender}: </strong>}
-        {msg.text}
-      </div>
-    );
-  })}
+      <div className="room-container">
+        <div className="videos">
+          <video ref={localVideoRef} autoPlay playsInline muted className="local-video" />
+          {remoteStreams.map(remote => <RemoteVideo key={remote.id} stream={remote.stream} />)}
         </div>
-        <form onSubmit={sendMessage} className="sumbitMessages">
-        <input
-          type="text"
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          className="messageRaw"
-          placeholder="Type your message..."
-        />
-        <button
-          type="submit"
-          className="submitButton"
-        >
-          Send
-        </button>
-      </form>
-      {/* Add more wide-only elements here */}
-    </div>
-  ) : (
-    <div className="narrowContent">
-      <img src="../public/images/chatPng.png" className="chatPng" onClick={() => setWide(!wide)} />
-
-      {/* Add more narrow-only elements here */}
-    </div>
-  )}
+        <div className="controls">
+          <button onClick={leaveRoom}>Leave Room</button>
+          <button onClick={toggleVideo}>{isVideoOff ? "Start Video" : "Stop Video"}</button>
+          <button onClick={toggleMute}>{isMuted ? "Unmute" : "Mute"}</button>
+        </div>
       </div>
 
+      <div className={`chatBox ${wide ? "wide" : "narrow"}`}>
+        {wide ? (
+          <div className="wideContent">
+            <h1 className="arrow-right" onClick={() => setWide(!wide)}>❌</h1>
+            <div className="messagesBox">
+              {messages.map((msg) => {
+                const isMe = msg.sender === userEmail;
+                return (
+                  <div key={msg.id} className={`message ${isMe ? "message-me" : "message-other"}`}>
+                    {!isMe && <strong>{msg.sender}: </strong>}
+                    {msg.text}
+                  </div>
+                );
+              })}
+            </div>
+            <form onSubmit={sendMessage} className="sumbitMessages">
+              <input
+                type="text"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                className="messageRaw"
+                placeholder="Type your message..."
+              />
+              <button type="submit" className="submitButton">Send</button>
+            </form>
+          </div>
+        ) : (
+          <div className="narrowContent">
+            <img src="../public/images/chatPng.png" className="chatPng" onClick={() => setWide(!wide)} />
+          </div>
+        )}
+      </div>
     </div>
   );
-
 }
 
 function RemoteVideo({ stream }) {
