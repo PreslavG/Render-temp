@@ -9,8 +9,6 @@ import {
   serverTimestamp,
   query,
   orderBy,
-  updateDoc,
-  increment,
   doc,
   onSnapshot,
   deleteDoc,
@@ -36,8 +34,10 @@ export default function Room() {
   const [isRunning, setIsRunning] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
   const [wide, setWide] = useState(false);
+  const [showTimerPopup, setShowTimerPopup] = useState(false);
+  const [studySession, setStudySession] = useState(25);
+  const [breakTime, setbreakTime] = useState(5);
 
-  // Timer logic
   useEffect(() => {
     let interval;
     if (isRunning && timeLeft > 0) {
@@ -59,9 +59,7 @@ export default function Room() {
     return `${minutes}:${secs.toString().padStart(2, "0")}`;
   };
 
-  // Firestore: Messages listener
   useEffect(() => {
-  // check for both user and roomId
   if (!auth.currentUser || !roomId) return;
 
   const messagesRef = collection(db, "users", auth.currentUser.uid, "rooms", roomId, "messages");
@@ -77,7 +75,6 @@ export default function Room() {
 
   return () => unsubscribe();
 }, [roomId]);
-  // Auth listener
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (!user) navigate("/login");
@@ -86,7 +83,6 @@ export default function Room() {
     return () => unsubscribe();
   }, [navigate]);
 
-  // WebRTC + socket
   useEffect(() => {
     if (!userEmail) return;
 
@@ -140,7 +136,6 @@ export default function Room() {
     };
   }, [roomId, userEmail, roomOwnerId]);
 
-  // WebRTC peer functions
   const createPeerConnection = (peerId) => {
     if (peerConnections.current[peerId]) return peerConnections.current[peerId];
 
@@ -239,6 +234,7 @@ export default function Room() {
           <button onClick={toggleVideo}>{isVideoOff ? "Start Video" : "Stop Video"}</button>
           <button onClick={toggleMute}>{isMuted ? "Unmute" : "Mute"}</button>
         </div>
+        
       </div>
 
       <div className={`chatBox ${wide ? "wide" : "narrow"}`}>
@@ -270,10 +266,55 @@ export default function Room() {
         ) : (
           <div className="narrowContent">
             <img src="../public/images/chatPng.png" className="chatPng" onClick={() => setWide(!wide)} />
+            <img src="../public/images/timer.png" className="chatPng" onClick={() => setShowTimerPopup(true)} />
+
           </div>
         )}
+
+        {showTimerPopup && (
+  <div className="popup-overlay">
+    <div className="popup">
+      <h3>Set Pomodoro Duration (max 120 min)</h3>
+      <label htmlFor="studyTimer">Study timer</label>
+      <input
+        type="number"
+        min={1}
+        max={120}
+        value={studySession}
+        onChange={(e) => {
+          let value = Number(e.target.value);
+          if (value > 120) value = 120;      // max 2 hours
+          if (value < 1) value = 1;          // min 1 minute
+          setStudySession(value);
+        }}
+      />
+      <label htmlFor="breakTimer">Break timer</label>
+      <input
+        type="number"
+        min={1}
+        max={120}
+        value={breakTime}
+        onChange={(e) => {
+          let value = Number(e.target.value);
+          if (value > 120) value = 120;      // max 2 hours
+          if (value < 1) value = 1;          // min 1 minute
+          setbreakTime(value);
+        }}
+        placeholder="Set custom study time!"
+      />
+
+
+      <div>
+        <button onClick={() => startPomodoro(studySession)}>Start</button>
+        <button onClick={() => setShowTimerPopup(false)}>Cancel</button>
       </div>
     </div>
+  </div>
+)}
+      </div>
+    </div>
+
+    
   );
 }
 
