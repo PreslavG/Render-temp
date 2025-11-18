@@ -12,6 +12,7 @@ import {
   doc,
   onSnapshot,
   deleteDoc,
+  setDoc,
 } from "firebase/firestore";
 import "./Room.css";
 
@@ -35,8 +36,11 @@ export default function Room() {
   const [showPopup, setShowPopup] = useState(false);
   const [wide, setWide] = useState(false);
   const [showTimerPopup, setShowTimerPopup] = useState(false);
+  const [showCustomTimerPopup, setShowCustomTimerPopup] = useState(false);
   const [studySession, setStudySession] = useState(25);
   const [breakTime, setbreakTime] = useState(5);
+  const [mode, setMode] = useState("study");
+  const [remainingSeconds, setRemaining] = useState(25 * 60);
 
   useEffect(() => {
     let interval;
@@ -47,17 +51,56 @@ export default function Room() {
     return () => clearInterval(interval);
   }, [isRunning, timeLeft]);
 
-  const resetTimer = () => {
-    setIsRunning(false);
-    setTimeLeft(25 * 60);
-    setShowPopup(false);
-  };
+  const updateTimerInDB = async (roomId, remainingSeconds, mode) => {
+    console.log("Saving timer:", { mode, remainingSeconds });
 
-  const formatTime = (seconds) => {
-    const minutes = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${minutes}:${secs.toString().padStart(2, "0")}`;
-  };
+  if (mode === undefined || remainingSeconds === undefined) {
+  console.warn("Timer update skipped: mode or remainingSeconds is undefined");
+  return;
+}
+
+  const timerRef = doc(db, "users", auth.currentUser.uid, "rooms", roomId);
+  
+  await setDoc(timerRef, {
+    timer:{
+    mode,
+    remainingSeconds,
+    lastUpdated: serverTimestamp()
+    }
+  }, { merge: true });
+};
+
+const switchMode = () => {
+  if (mode === "study") {
+    setMode("break");
+    setRemaining(breakTime * 60);
+  } else {
+    setMode("study");
+    setRemaining(studySession * 60);
+  }
+};
+
+useEffect(() => {
+  if (!isRunning) return;
+
+  const interval = setInterval(() => {
+    setRemaining(prev => {
+      const updated = prev - 1;
+
+      // Update Firestore every second
+      updateTimerInDB(roomId, updated, mode);
+
+      if (updated <= 0) {
+        clearInterval(interval);
+        switchMode(); // change between study/break
+      }
+
+      return updated;
+    });
+  }, 1000);
+
+  return () => clearInterval(interval);
+}, [isRunning, mode]);
 
   useEffect(() => {
   if (!auth.currentUser || !roomId) return;
@@ -191,7 +234,7 @@ export default function Room() {
     localStreamRef.current?.getTracks().forEach(track => track.stop());
     socket.emit("leave-room", { roomId });
 
-    await deleteDoc(doc(db, "users", auth.currentUser.uid, "rooms", roomId, "activeUsers", auth.currentUser.uid));
+    await deleteDoc(doc(db, "users", auth.currentUser.uid, "rooms", roomId, "activeUsers", auth.currentUser.displayName));
 
     navigate("/lobby");
   };
@@ -267,13 +310,30 @@ export default function Room() {
           <div className="narrowContent">
             <img src="../public/images/chatPng.png" className="chatPng" onClick={() => setWide(!wide)} />
             <img src="../public/images/timer.png" className="chatPng" onClick={() => setShowTimerPopup(true)} />
-
           </div>
         )}
 
         {showTimerPopup && (
   <div className="popup-overlay">
-    <div className="popup">
+    <div className="customPomodoroPopup">
+      <h3>Set Pomodoro Duration (max 120 min)</h3>
+
+
+      <div>
+        <button onClick={() => { setRemainingSeconds(25 * 60), setbreakTime(5 * 60)}}>25/5</button> 
+        <button onClick={() => { setRemainingSeconds(50 * 60), setbreakTime(10 * 60)}}>50/10</button> 
+        <button onClick={() => { setRemainingSeconds(90 * 15), setbreakTime(5 * 60)}}>90/15</button> 
+        <button onClick={() => { setShowCustomTimerPopup(true)}}>Custom</button> 
+
+        <button onClick={() => {alert("it works"),setMode("study"),setIsRunning(true),setStudySession(studySession)}}>Start</button>
+        <button onClick={() => setShowTimerPopup(false)}>Cancel</button>
+      </div>
+    </div>
+  </div>
+)}
+{showCustomTimerPopup && (
+  <div className="popup-overlay">
+    <div className="customPomodoroPopup">
       <h3>Set Pomodoro Duration (max 120 min)</h3>
       <label htmlFor="studyTimer">Study timer</label>
       <input
@@ -296,16 +356,16 @@ export default function Room() {
         value={breakTime}
         onChange={(e) => {
           let value = Number(e.target.value);
-          if (value > 120) value = 120;      // max 2 hours
+          if (value > 50) value = 50;      // max 2 hours
           if (value < 1) value = 1;          // min 1 minute
           setbreakTime(value);
         }}
-        placeholder="Set custom study time!"
       />
 
 
       <div>
-        <button onClick={() => startPomodoro(studySession)}>Start</button>
+
+        <button onClick={() => {alert("it works"),setMode("study"),setIsRunning(true),setStudySession(studySession)}}>Start</button>
         <button onClick={() => setShowTimerPopup(false)}>Cancel</button>
       </div>
     </div>

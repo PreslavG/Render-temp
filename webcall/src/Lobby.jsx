@@ -13,8 +13,6 @@ import {
   query,
   where,
   getDoc,
-  updateDoc,
-  increment,
 } from "firebase/firestore";
 
 import "./Lobby.css";
@@ -70,6 +68,7 @@ export default function Lobby() {
   const [isUserOptionsOpen, setIsUserOptionsPopupOpen] = useState(false);
   const [roomFullPopup, setRoomFullPopup] = useState(false);
   const [activeUsers, setActiveUsers] = useState({});
+  const [activeUsersList, setActiveUsersList] = useState({});
 
   const [text, setText] = useState(""); 
   const [rooms, setRooms] = useState([]);
@@ -96,7 +95,6 @@ export default function Lobby() {
   const activeUsersRef = collection(db, "users", user.uid, "rooms", room.id, "activeUsers");
   const snapshot = await getDocs(activeUsersRef);
 
-  // You need to compute "total active users" first using the effect above or helper function
   const totalActive = activeUsers[room.id] || 0;
 
   if (totalActive >= room.capacity) {
@@ -153,24 +151,37 @@ export default function Lobby() {
   useEffect(() => {
   if (!user) return;
 
-  // Fetch all users in the system
+  // Take all users in the system
   const usersRef = collection(db, "users");
 
   const unsubscribeList = rooms.map(room => {
-    // Listen to all users' subcollections for this room
     const unsub = onSnapshot(usersRef, async snapshot => {
       let total = 0;
+      let users = [];
+      
 
       for (const userDoc of snapshot.docs) {
         const activeUsersRef = collection(db, "users", userDoc.id, "rooms", room.id, "activeUsers");
         const activeSnap = await getDocs(activeUsersRef);
         total += activeSnap.size;
+
+        activeSnap.forEach(docSnap => {
+          users.push({id: docSnap.id,
+            ...docSnap.data()});
+        } );
+
       }
 
       setActiveUsers(prev => ({
         ...prev,
         [room.id]: total
       }));
+
+      setActiveUsersList(prev => ({
+        ...prev,
+        [room.id]: users
+      }));
+    
     });
 
     return unsub;
@@ -446,12 +457,20 @@ export default function Lobby() {
                <button
                  key={room.id}
                  className="roomButton"
-                 onClick={() =>{alert(activeUsers[room.id]);joinRoom(room)}}
+                 onClick={() =>{alert(activeUsersList[room.id]);joinRoom(room)}}
                >
                {room.name} {room.adminId === user.uid && <span>👑</span>}
                    <h1 className="roomPplcount">
                        {activeUsers[room.id]}/{room.capacity}👤
                    </h1>
+                    {/* List all active users */}
+                         {activeUsersList[room.id] && activeUsersList[room.id].length > 0 && (
+                        <ul className="activeUsersList">
+                              {activeUsersList[room.id].map((user) => (
+                               <li key={user.id}>{user.name}</li>
+                              ))}
+                        </ul>
+                        )}
                  </button>
                 ))}
             </div>
