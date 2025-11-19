@@ -17,6 +17,7 @@ import {
 import "./Room.css";
 
 export default function Room() {
+  const sound = new Audio("../public/sounds/end.mp3");
   const { roomId } = useParams();
   const navigate = useNavigate();
   const { state } = useLocation();
@@ -39,7 +40,7 @@ export default function Room() {
   const [showCustomTimerPopup, setShowCustomTimerPopup] = useState(false);
   const [studySession, setStudySession] = useState(25);
   const [breakTime, setbreakTime] = useState(5);
-  const [mode, setMode] = useState(studySession ? "study" : "break");
+  const [mode, setMode] = useState(null);
   const [remainingSeconds, setRemaining] = useState(25 * 60);
   const isLocalUpdate = useRef(false);
   const hasLoaded = useRef(false);
@@ -54,16 +55,6 @@ export default function Room() {
 
     const data = snapshot.data();
     if (!data.timer) return;
-
-    if (!hasLoaded.current) {
-      hasLoaded.current = true;
-      return;
-    }
-
-    if (isLocalUpdate.current) {
-      isLocalUpdate.current = false;
-      return;
-    }
 
     console.log("🔥 Timer received from Firestore:", data.timer);
 
@@ -80,12 +71,11 @@ export default function Room() {
     if (isRunning && timeLeft > 0) {
       interval = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
     }
-    if (timeLeft === 0 && isRunning) setShowPopup(true);
+    if (timeLeft === 0 && isRunning) {alert,setShowPopup(true)};
     return () => clearInterval(interval);
   }, [isRunning, timeLeft]);
 
   const updateTimerInDB = async (roomId, remainingSeconds, mode) => {
-    isLocalUpdate.current = true;
     
 
   if (mode === undefined || remainingSeconds === undefined) {
@@ -106,10 +96,9 @@ export default function Room() {
 const switchMode = () => {
   // ⛔ Block Firestore from overriding the new mode for 2 seconds
   isLocalUpdate.current = true;
-  setTimeout(() => { isLocalUpdate.current = false; }, 2000);
 
   if (mode === "study") {
-    const secs = breakTime * 60;
+    const secs = breakTime;
     setMode("break");
     setRemaining(secs);
     updateTimerInDB(roomId, secs, "break");
@@ -124,15 +113,16 @@ const switchMode = () => {
 useEffect(() => {
   if (!isRunning) return;
 
-  const interval = setInterval(() => {
+    sound.play();
+    const interval = setInterval(() => {
     setRemaining(prev => {
-  const updated = prev - 1;
-  if (updated <= 0) {
-    switchMode(mode, studySession * 60, breakTime * 60);
-    return 0;
-  }
-  return updated;
-});
+      const updated = prev - 1;
+      if (updated <= 0) {
+        switchMode(mode, studySession * 60, breakTime);
+        return 0;
+      }
+      return updated;
+    });
   }, 1000);
 
   return () => clearInterval(interval);
@@ -270,7 +260,7 @@ useEffect(() => {
     localStreamRef.current?.getTracks().forEach(track => track.stop());
     socket.emit("leave-room", { roomId });
 
-    await deleteDoc(doc(db, "users", auth.currentUser.uid, "rooms", roomId, "activeUsers", auth.currentUser.displayName));
+    await deleteDoc(doc(db, "users", auth.currentUser.uid, "rooms", roomId, "activeUsers", auth.currentUser.uid));
 
     navigate("/lobby");
   };
@@ -366,9 +356,9 @@ useEffect(() => {
 
 
       <div>
-        <button onClick={() => { setRemaining(25), setbreakTime(5), setMode("study"),setIsRunning(true),setStudySession(25)}}>25/5</button> 
-        <button onClick={() => { setRemaining(50 * 60), setbreakTime(10),setMode("study"),setIsRunning(true),setStudySession(50)}}>50/10</button> 
-        <button onClick={() => { setRemaining(90 * 60), setbreakTime(15), setMode("study"),setIsRunning(true),setStudySession(90)}}>90/15</button> 
+        <button onClick={() => {const secs = 25 ; setRemaining(secs), setbreakTime(5), setMode("study"),setIsRunning(true),setStudySession(25); updateTimerInDB(roomId, secs, "study");}}>25/5</button> 
+        <button onClick={() => { const secs = 50 ;setRemaining(50 * 60), setbreakTime(10),setMode("study"),setIsRunning(true),setStudySession(50), updateTimerInDB(roomId, secs, "study" )}}>50/10</button> 
+        <button onClick={() => { const secs = 90 ;setRemaining(90 * 60), setbreakTime(15), setMode("study"),setIsRunning(true),setStudySession(90), updateTimerInDB(roomId, secs, "study" )}}>90/15</button> 
         <button onClick={() => { setShowCustomTimerPopup(true), setShowTimerPopup(false)}}>Custom</button> 
 
         <button onClick={() => setShowTimerPopup(false)}>Cancel</button>
@@ -415,8 +405,11 @@ useEffect(() => {
                setMode("study");
                setIsRunning(true);
                setRemaining(secs);
+               setRemaining(secs);
                setShowCustomTimerPopup(false);
                setStudySession(secs); 
+               alert(secs);
+
              }}>
                Start
         </button>

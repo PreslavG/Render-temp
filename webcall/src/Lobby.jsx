@@ -80,6 +80,9 @@ export default function Lobby() {
   const [selectedFriend, setSelectedFriend] = useState(null);
   const [selectedRoomId, setSelectedRoomId] = useState("");
 
+  const [remainingSeconds, setRemainingSeconds] = useState(null);
+  const [mode, setMode] = useState(null);
+
   const user = auth.currentUser;
 
   const handleLogout = async () => {
@@ -147,6 +150,23 @@ export default function Lobby() {
     });
     return unsubscribe;
   }, [user]);
+
+  useEffect(() => {
+    if (!selectedRoomId) return;
+  const roomRef = doc(db,"users",user.uid ,"rooms", selectedRoomId);
+
+  const unsubscribe = onSnapshot(roomRef, (snapshot) => {
+    if (snapshot.exists()) return; 
+      const data = snapshot.data();
+      if (data.timer) {
+      setMode(data.timer.mode);
+      setRemainingSeconds(data.timer.remainingSeconds);
+    
+    }
+  });
+
+  return () => unsubscribe();
+}, [selectedRoomId]);
 
   useEffect(() => {
   if (!user) return;
@@ -463,14 +483,15 @@ export default function Lobby() {
                    <h1 className="roomPplcount">
                        {activeUsers[room.id]}/{room.capacity}👤
                    </h1>
-                    {/* List all active users */}
                          {activeUsersList[room.id] && activeUsersList[room.id].length > 0 && (
                         <ul className="activeUsersList">
                               {activeUsersList[room.id].map((user) => (
                                <li key={user.id}>{user.name}</li>
                               ))}
                         </ul>
+                        
                         )}
+                        <h1>{mode && remainingSeconds}</h1>
                  </button>
                 ))}
             </div>
