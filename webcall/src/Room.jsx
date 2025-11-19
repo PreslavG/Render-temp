@@ -39,8 +39,41 @@ export default function Room() {
   const [showCustomTimerPopup, setShowCustomTimerPopup] = useState(false);
   const [studySession, setStudySession] = useState(25);
   const [breakTime, setbreakTime] = useState(5);
-  const [mode, setMode] = useState("study");
+  const [mode, setMode] = useState(studySession ? "study" : "break");
   const [remainingSeconds, setRemaining] = useState(25 * 60);
+  const isLocalUpdate = useRef(false);
+  const hasLoaded = useRef(false);
+
+  useEffect(() => {
+  if (!roomId || !auth.currentUser) return;
+
+  const timerRef = doc(db, "users", auth.currentUser.uid, "rooms", roomId);
+
+  const unsubscribe = onSnapshot(timerRef, snapshot => {
+    if (!snapshot.exists()) return;
+
+    const data = snapshot.data();
+    if (!data.timer) return;
+
+    if (!hasLoaded.current) {
+      hasLoaded.current = true;
+      return;
+    }
+
+    if (isLocalUpdate.current) {
+      isLocalUpdate.current = false;
+      return;
+    }
+
+    console.log("🔥 Timer received from Firestore:", data.timer);
+
+    setMode(data.timer.mode);
+    setRemaining(data.timer.remainingSeconds);
+  });
+
+  return () => unsubscribe();
+}, [roomId]);
+
 
   useEffect(() => {
     let interval;
@@ -52,10 +85,10 @@ export default function Room() {
   }, [isRunning, timeLeft]);
 
   const updateTimerInDB = async (roomId, remainingSeconds, mode) => {
-    console.log("Saving timer:", { mode, remainingSeconds });
+    isLocalUpdate.current = true;
+    
 
   if (mode === undefined || remainingSeconds === undefined) {
-  console.warn("Timer update skipped: mode or remainingSeconds is undefined");
   return;
 }
 
@@ -71,12 +104,20 @@ export default function Room() {
 };
 
 const switchMode = () => {
+  // ⛔ Block Firestore from overriding the new mode for 2 seconds
+  isLocalUpdate.current = true;
+  setTimeout(() => { isLocalUpdate.current = false; }, 2000);
+
   if (mode === "study") {
+    const secs = breakTime * 60;
     setMode("break");
-    setRemaining(breakTime * 60);
+    setRemaining(secs);
+    updateTimerInDB(roomId, secs, "break");
   } else {
+    const secs = studySession;
     setMode("study");
-    setRemaining(studySession * 60);
+    setRemaining(secs);
+    updateTimerInDB(roomId, secs, "study");
   }
 };
 
@@ -85,22 +126,17 @@ useEffect(() => {
 
   const interval = setInterval(() => {
     setRemaining(prev => {
-      const updated = prev - 1;
-
-      // Update Firestore every second
-      updateTimerInDB(roomId, updated, mode);
-
-      if (updated <= 0) {
-        clearInterval(interval);
-        switchMode(); // change between study/break
-      }
-
-      return updated;
-    });
+  const updated = prev - 1;
+  if (updated <= 0) {
+    switchMode(mode, studySession * 60, breakTime * 60);
+    return 0;
+  }
+  return updated;
+});
   }, 1000);
 
   return () => clearInterval(interval);
-}, [isRunning, mode]);
+}, [isRunning, mode, breakTime, studySession]);
 
   useEffect(() => {
   if (!auth.currentUser || !roomId) return;
@@ -264,10 +300,19 @@ useEffect(() => {
     setNewMessage("");
   };
 
-  // UI
+  const formatTime = (secs) => {
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+};
+
   return (
     <div className="roomPage">
       <div className="room-container">
+        <div className="timerDisplay">
+  <h1>{formatTime(remainingSeconds)}</h1>
+  <p>Mode: {mode === "study" ? "📘 Study" : "☕ Break"}</p>
+</div>
         <div className="videos">
           <video ref={localVideoRef} autoPlay playsInline muted className="local-video" />
           {remoteStreams.map(remote => <RemoteVideo key={remote.id} stream={remote.stream} />)}
@@ -279,6 +324,7 @@ useEffect(() => {
         </div>
         
       </div>
+
 
       <div className={`chatBox ${wide ? "wide" : "narrow"}`}>
         {wide ? (
@@ -320,12 +366,11 @@ useEffect(() => {
 
 
       <div>
-        <button onClick={() => { setRemainingSeconds(25 * 60), setbreakTime(5 * 60)}}>25/5</button> 
-        <button onClick={() => { setRemainingSeconds(50 * 60), setbreakTime(10 * 60)}}>50/10</button> 
-        <button onClick={() => { setRemainingSeconds(90 * 15), setbreakTime(5 * 60)}}>90/15</button> 
-        <button onClick={() => { setShowCustomTimerPopup(true)}}>Custom</button> 
+        <button onClick={() => { setRemaining(25), setbreakTime(5), setMode("study"),setIsRunning(true),setStudySession(25)}}>25/5</button> 
+        <button onClick={() => { setRemaining(50 * 60), setbreakTime(10),setMode("study"),setIsRunning(true),setStudySession(50)}}>50/10</button> 
+        <button onClick={() => { setRemaining(90 * 60), setbreakTime(15), setMode("study"),setIsRunning(true),setStudySession(90)}}>90/15</button> 
+        <button onClick={() => { setShowCustomTimerPopup(true), setShowTimerPopup(false)}}>Custom</button> 
 
-        <button onClick={() => {alert("it works"),setMode("study"),setIsRunning(true),setStudySession(studySession)}}>Start</button>
         <button onClick={() => setShowTimerPopup(false)}>Cancel</button>
       </div>
     </div>
@@ -365,8 +410,17 @@ useEffect(() => {
 
       <div>
 
-        <button onClick={() => {alert("it works"),setMode("study"),setIsRunning(true),setStudySession(studySession)}}>Start</button>
-        <button onClick={() => setShowTimerPopup(false)}>Cancel</button>
+        <button onClick={() => {
+            const secs = studySession * 60;
+               setMode("study");
+               setIsRunning(true);
+               setRemaining(secs);
+               setShowCustomTimerPopup(false);
+               setStudySession(secs); 
+             }}>
+               Start
+        </button>
+        <button onClick={() => {setShowCustomTimerPopup(false), setShowTimerPopup(true)}}>Cancel</button>
       </div>
     </div>
   </div>
@@ -377,6 +431,8 @@ useEffect(() => {
     
   );
 }
+
+
 
 function RemoteVideo({ stream }) {
   const ref = useRef();
