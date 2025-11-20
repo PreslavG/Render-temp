@@ -408,5 +408,12 @@ justify-content: center;
   margin-bottom: 0;
 }
 
+.customPomodoroPopup {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 20px;
+  background-color: #afe29b;
+}
 
 

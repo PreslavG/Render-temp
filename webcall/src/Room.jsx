@@ -11,9 +11,11 @@ import {
   query,
   orderBy,
   doc,
+  getDocs,
   onSnapshot,
   deleteDoc,
   setDoc,
+  where,
 } from "firebase/firestore";
 import "./Room.css";
 
@@ -347,12 +349,33 @@ useEffect(() => {
     setNewMessage("");
   };
 
-  const formatTime = (secs) => {
-  const m = Math.floor(secs / 60);
-  const s = secs % 60;
+  const formatTime = (seconds) => {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 };
 
+async function getAndFormatTime() {
+  // Example: find a user with a specific email
+  const q = query(
+    collection(db, "users", auth.currentUser.uid, "rooms", roomId, "timers"),
+    where("remainingSeconds", "==", "someValue"),
+  );
+
+  const querySnapshot = await getDocs(q);
+
+  if (!querySnapshot.empty) {
+    const doc = querySnapshot.docs[0];
+    const data = doc.data();
+
+    const seconds = data.seconds; 
+
+    const formatted = formatTime(seconds);
+    console.log("Formatted time:", formatted);
+  } else {
+    console.log("No document found with that field value!");
+  }
+}
   return (
     <div className="roomPage">
       <div className="room-container">
@@ -397,9 +420,9 @@ useEffect(() => {
           </div>
         ) : (
           <div className="narrowContent">
-            <img src="../public/images/chatPng.png" className="chatPng1" onClick={() => setWide(!wide)} />
-            <img src="../public/images/timer.png" className="chatPng" onClick={() => setShowTimerPopup(true)} />
-            <img src="../public/images/settings.png" className="chatPng"/>
+            <img src="/images/chatPng.png" className="chatPng1" onClick={() => setWide(!wide)} />
+            <img src="/images/timer.png" className="chatPng" onClick={() => setShowTimerPopup(true)} />
+            <img src="/images/settings.png" className="chatPng"/>
           </div>
         )}
         
@@ -414,7 +437,7 @@ useEffect(() => {
 
 
       <div>
-        <button onClick={() => {const secs = 25 ; setRemaining(secs), setbreakTime(5), setMode("study"),setIsRunning(true),setStudySession(25); updateTimerInDB(roomId, secs, "study");}}>25/5</button> 
+        <button onClick={() => {const secs = 25 ; setRemaining(secs), setbreakTime(5), setMode("study"),setIsRunning(true),setStudySession(25); updateTimerInDB(roomId, secs, "study"); getAndFormatTime();}}>25/5</button> 
         <button onClick={() => { const secs = 50 ;setRemaining(50 * 60), setbreakTime(10),setMode("study"),setIsRunning(true),setStudySession(50), updateTimerInDB(roomId, secs, "study" )}}>50/10</button> 
         <button onClick={() => { const secs = 90 ;setRemaining(90 * 60), setbreakTime(15), setMode("study"),setIsRunning(true),setStudySession(90), updateTimerInDB(roomId, secs, "study" )}}>90/15</button> 
         <button onClick={() => { setShowCustomTimerPopup(true), setShowTimerPopup(false)}}>Custom</button> 

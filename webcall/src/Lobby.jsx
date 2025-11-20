@@ -401,10 +401,6 @@
           </div>
         )}
 
-        <div className="clock">
-          
-          <HourlyClock />
-        </div>
         
         {/* Popup: Send Friend Request */}
         {isFriendsPopupOpen && (
