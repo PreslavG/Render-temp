@@ -27,9 +27,10 @@ body {
   position: absolute;
   inset: 0;  
   background:url(../images/background.jpg);
-  background-size: cover;
+  background-size:cover;
   background-position: center;
-  filter: blur(2px);
+  background-repeat: no-repeat;
+  
   transform: scale(1.1);        
   z-index: -1;                 
 }
@@ -68,6 +69,10 @@ body {
 }
 
 .chatBox {
+  background-color: #08090b;
+  position: fixed;
+  top:0;
+  right:0;
   width: 300px;
   transition: all 0.2s ease-in-out; /* <— this is the magic line */
   overflow: hidden;
@@ -80,11 +85,13 @@ body {
 }
 
 .chatBox.narrow {
-  max-width: 52px;
+  max-width: 70px;
   height: 100vh;    
   display: flex;
   justify-content: center;
+  align-items: center;
   align-items: start;
+  background-color: rgb(0,0,0,0.5);
 }
 
 .arrow-right{
@@ -96,13 +103,28 @@ body {
   
 }
 
-.chatPng{
+.chatPng1{
+  
   width: 50px;
   height: 50px;
   padding: 0;
   cursor: pointer;
   border-radius: 100%;
-  margin-right: 2px;
+  border: 2px solid rgb(0, 0, 0);
+  margin-top: 40px;
+  margin-left: 20px;
+  margin-right: 20px;
+}
+.chatPng{
+  
+  width: 50px;
+  height: 50px;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 100%;
+  border: 2px solid rgb(0, 0, 0);
+  margin: 20px;
+  margin-bottom: 0;
 }
 
 .messagesBox {
@@ -197,11 +219,10 @@ body, html, #root, .room-page {
 
 .local-video,
 .remote-video {
-  width: 1000px;
-  height: 500px;
+  display: flex;
+  flex: 0 0 calc(33.33% - 20px);
   border-radius: 12px;
   border: 4px solid rgba(0, 0, 0, 0.4);
-  object-fit: cover;
   box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
 
@@ -218,8 +239,8 @@ body, html, #root, .room-page {
 
 .controls button {
   border-radius: 20%;
-    height: 50px;
-    width: 125px;
+    height: 40px;
+    width: 110px;
     cursor: pointer;
     font-family: 'Pelmeshka', 'Luckiest Guy', cursive, sans-serif;
   padding: 8px 16px;
@@ -242,10 +263,7 @@ body, html, #root, .room-page {
   flex-wrap: wrap;       
   gap: 5px;              
   align-items: center;
-  background-image: linear-gradient(rgba(27, 26, 26, 0.6), rgba(169, 52, 22, 0.4) ), url(../images/background.jpg);
-  background-size: cover;
-  background-position: right 45%; /* 👈 show right side of image */
-  background-repeat: no-repeat;
+  background-color: rgba(0, 0, 0, 0.7);
 }
 
 .roomName{

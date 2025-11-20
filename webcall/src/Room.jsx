@@ -312,11 +312,7 @@ useEffect(() => {
           <button onClick={toggleVideo}>{isVideoOff ? "Start Video" : "Stop Video"}</button>
           <button onClick={toggleMute}>{isMuted ? "Unmute" : "Mute"}</button>
         </div>
-        
-      </div>
-
-
-      <div className={`chatBox ${wide ? "wide" : "narrow"}`}>
+        <div className={`chatBox ${wide ? "wide" : "narrow"}`}>
         {wide ? (
           <div className="wideContent">
             <h1 className="arrow-right" onClick={() => setWide(!wide)}>❌</h1>
@@ -344,10 +340,15 @@ useEffect(() => {
           </div>
         ) : (
           <div className="narrowContent">
-            <img src="../public/images/chatPng.png" className="chatPng" onClick={() => setWide(!wide)} />
+            <img src="../public/images/chatPng.png" className="chatPng1" onClick={() => setWide(!wide)} />
             <img src="../public/images/timer.png" className="chatPng" onClick={() => setShowTimerPopup(true)} />
+            <img src="../public/images/settings.png" className="chatPng"/>
           </div>
         )}
+        
+      </div>
+
+
 
         {showTimerPopup && (
   <div className="popup-overlay">
