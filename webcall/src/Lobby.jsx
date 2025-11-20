@@ -355,7 +355,7 @@
     // 🔹 Accept / Reject Room Invite
     const acceptRoomInvite = async (invite) => {
       try {
-        await setDoc(collection(db, "users", user.uid, "rooms", invite.roomId), {
+        await setDoc(doc(db, "users", user.uid, "rooms", invite.roomId), {
           name: invite.roomName,
           invitedBy: invite.fromEmail,
           createdAt: new Date(),
