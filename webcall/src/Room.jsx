@@ -21,7 +21,6 @@ export default function Room() {
   const { roomId } = useParams();
   const navigate = useNavigate();
   const { state } = useLocation();
-  const roomOwnerId = state?.roomOwnerId; // room owner's UID
   const [userEmail, setUserEmail] = useState(null);
 
   const localVideoRef = useRef();
@@ -164,9 +163,6 @@ useEffect(() => {
         if (!socket.connected) socket.connect();
         socket.emit("join-room", { roomId, email: userEmail });
 
-        if (roomOwnerId) {
-          const roomRef = doc(db, "users", roomOwnerId, "rooms", roomId);
-        }
       } catch (err) {
         console.error("Cannot access camera/microphone:", err);
         alert("Cannot access camera/microphone.");
@@ -203,7 +199,7 @@ useEffect(() => {
       socket.off("ice-candidate", handleIce);
       socket.off("user-left", handleUserLeft);
     };
-  }, [roomId, userEmail, roomOwnerId]);
+  }, [roomId, userEmail]);
 
   const createPeerConnection = (peerId) => {
     if (peerConnections.current[peerId]) return peerConnections.current[peerId];
@@ -279,9 +275,8 @@ useEffect(() => {
   const sendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
-    if (!roomOwnerId) return;
 
-    await addDoc(collection(db, "users", roomOwnerId, "rooms", roomId, "messages"), {
+    await addDoc(collection(db, "users", auth.currentUser.uid, "rooms", roomId, "messages"), {
       text: newMessage,
       sender: auth.currentUser?.email || "Anonymous",
       createdAt: serverTimestamp(),
