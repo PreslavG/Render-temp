@@ -189,9 +189,7 @@ useEffect(() => {
       localStreamRef.current?.getTracks().forEach(track => track.stop());
       socket.emit("leave-room", { roomId });
 
-      if (roomOwnerId) {
-        const roomRef = doc(db, "users", roomOwnerId, "rooms", roomId);
-      }
+
 
       socket.off("user-joined", handleUserJoined);
       socket.off("offer", handleOffer);
