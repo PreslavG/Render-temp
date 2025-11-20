@@ -6,6 +6,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import {
   collection,
   addDoc,
+  getDoc,
   serverTimestamp,
   query,
   orderBy,
@@ -42,7 +43,7 @@ export default function Room() {
   const [mode, setMode] = useState(null);
   const [remainingSeconds, setRemaining] = useState(25 * 60);
   const isLocalUpdate = useRef(false);
-  const hasLoaded = useRef(false);
+  const roomOwnerId = useRef(null);
 
   useEffect(() => {
   if (!roomId || !auth.currentUser) return;
@@ -143,6 +144,42 @@ useEffect(() => {
 
   return () => unsubscribe();
 }, [roomId]);
+
+ useEffect(() => {
+  if (!auth.currentUser || !roomId) return;
+
+  let interval;
+
+  const setupHeartbeat = async () => {
+    // Get room admin
+    const roomRef = doc(db, "users", auth.currentUser.uid, "rooms", roomId);
+    const roomSnap = await getDoc(roomRef);
+    if (!roomSnap.exists()) return;
+
+    roomOwnerId.current = roomSnap.data().ownerId;
+    if (!roomOwnerId.current) return;
+
+    // Initial heartbeat
+    await setDoc(doc(db, "users", roomOwnerId, "rooms", roomId, "activeUsers", auth.currentUser.uid), {
+      email: auth.currentUser.email,
+      name: auth.currentUser.displayName,
+      lastSeen: serverTimestamp(),
+    }, { merge: true });
+
+    // Update heartbeat every 5 seconds
+    interval = setInterval(() => {
+      setDoc(doc(db, "users", roomOwnerId, "rooms", roomId, "activeUsers", auth.currentUser.uid), 
+      {
+        lastSeen: serverTimestamp()},
+       { merge: true });
+    }, 5000);
+  };
+
+  setupHeartbeat();
+
+  return () => clearInterval(interval);
+}, [roomId, auth.currentUser]);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (!user) navigate("/login");
@@ -150,6 +187,33 @@ useEffect(() => {
     });
     return () => unsubscribe();
   }, [navigate]);
+
+  useEffect(() => {
+  const handleBeforeUnload = async (event) => {
+    if (auth.currentUser) {
+      const activeUserRef = doc(
+        db,
+        "users",
+        auth.currentUser.uid,  
+        "rooms",
+        roomId,
+        "activeUsers",
+        auth.currentUser.uid
+      );
+      try {
+        await deleteDoc(activeUserRef);
+      } catch (err) {
+        console.error("Failed to remove user on close:", err);
+      }
+    }
+  };
+
+  window.addEventListener("beforeunload", handleBeforeUnload);
+
+  return () => {
+    window.removeEventListener("beforeunload", handleBeforeUnload);
+  };
+}, [roomId, auth.currentUser]);
 
   useEffect(() => {
     if (!userEmail) return;
@@ -253,9 +317,9 @@ useEffect(() => {
     peerConnections.current = {};
     localStreamRef.current?.getTracks().forEach(track => track.stop());
     socket.emit("leave-room", { roomId });
-
+   if (roomOwnerId) {
     await deleteDoc(doc(db, "users", auth.currentUser.uid, "rooms", roomId, "activeUsers", auth.currentUser.uid));
-
+   }
     navigate("/lobby");
   };
 

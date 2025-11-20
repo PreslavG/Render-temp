@@ -82,6 +82,7 @@
 
     const [remainingSeconds, setRemainingSeconds] = useState(null);
     const [mode, setMode] = useState(null);
+    const ACTIVE_THRESHOLD = 5000;
 
     const user = auth.currentUser;
 
@@ -95,23 +96,24 @@
     };
 
     const joinRoom = async (room) => {
-    const activeUsersRef = collection(db, "users", user.uid, "rooms", room.id, "activeUsers");
+    const ownerId = room.adminId;
+    const activeUsersRef = collection(db, "users", ownerId, "rooms", room.id, "activeUsers");
     const snapshot = await getDocs(activeUsersRef);
 
-    const totalActive = activeUsers[room.id] || 0;
+    const totalActive = snapshot.size;
 
     if (totalActive >= room.capacity) {
       alert("Room is full!");
       return;
     }
 
-    await setDoc(doc(db, "users", user.uid,"rooms", room.id, "activeUsers", user.uid ), {
+    await setDoc(doc(db, "users", ownerId,"rooms", room.id, "activeUsers", user.uid ), {
       uid: user.uid,
       email: user.email,
       name: user.displayName,
     });
 
-    navigate(`/room/${room.id}`, { state: { role: room.adminId === user.uid ? "admin" : "user" } });
+    navigate(`/room/${room.id}`, { state: { role: room.adminId === user.uid ? "admin" : "user" },ownerId: ownerId,});
   };
 
     useEffect(() => {
@@ -151,64 +153,43 @@
       return unsubscribe;
     }, [user]);
 
-    useEffect(() => {
-      if (!selectedRoomId) return;
-    const roomRef = doc(db,"users",user.uid ,"rooms", selectedRoomId);
+          useEffect(() => {
+            if (!selectedRoomId) return;
+          const roomRef = doc(db,"users",user.uid ,"rooms", selectedRoomId);
 
-    const unsubscribe = onSnapshot(roomRef, (snapshot) => {
-      if (snapshot.exists()) return; 
-        const data = snapshot.data();
-        if (data.timer) {
-        setMode(data.timer.mode);
-        setRemainingSeconds(data.timer.remainingSeconds);
-      
-      }
-    });
+          const unsubscribe = onSnapshot(roomRef, (snapshot) => {
+            if (snapshot.exists()) return; 
+              const data = snapshot.data();
+              if (data.timer) {
+              setMode(data.timer.mode);
+              setRemainingSeconds(data.timer.remainingSeconds);
+            
+            }
+          });
 
-    return () => unsubscribe();
-  }, [selectedRoomId]);
+          return () => unsubscribe();
+        }, [selectedRoomId]);
 
-    useEffect(() => {
-    if (!user) return;
+          useEffect(() => {
+        if (!user) return;
 
-    // Take all users in the system
-    const usersRef = collection(db, "users");
+        const unsubList = rooms.map(room => {
+          console.log("Room debug:", room);
+          if (!room.id || !room.adminId) return () => {};
 
-    const unsubscribeList = rooms.map(room => {
-      const unsub = onSnapshot(usersRef, async snapshot => {
-        let total = 0;
-        let users = [];
-        
+          const activeUsersRef = collection(db, "users", room.adminId, "rooms", room.id, "activeUsers");
 
-        for (const userDoc of snapshot.docs) {
-          const activeUsersRef = collection(db, "users", userDoc.id, "rooms", room.id, "activeUsers");
-          const activeSnap = await getDocs(activeUsersRef);
-          total += activeSnap.size;
+          const unsub = onSnapshot(activeUsersRef, snapshot => {
+            const users = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+            setActiveUsersList(prev => ({ ...prev, [room.id]: users }));
+            setActiveUsers(prev => ({ ...prev, [room.id]: users.length }));
+          });
 
-          activeSnap.forEach(docSnap => {
-            users.push({id: docSnap.id,
-              ...docSnap.data()});
-          } );
+          return unsub;
+        });
 
-        }
-
-        setActiveUsers(prev => ({
-          ...prev,
-          [room.id]: total
-        }));
-
-        setActiveUsersList(prev => ({
-          ...prev,
-          [room.id]: users
-        }));
-      
-      });
-
-      return unsub;
-    });
-
-    return () => unsubscribeList.forEach(unsub => unsub());
-  }, [rooms]);
+        return () => unsubList.forEach(unsub => unsub());
+      }, [rooms, user]);
 
     const roomAdd = async () => {
       if (!user || text.trim() === "") return;
@@ -358,6 +339,8 @@
         await setDoc(doc(db, "users", user.uid, "rooms", invite.roomId), {
           name: invite.roomName,
           invitedBy: invite.fromEmail,
+          adminId: invite.fromId,        // 🟢 КОЙ Е OWNER-а
+          capacity: 5,                   // ако имаш capacity
           createdAt: new Date(),
         });
         await deleteDoc(doc(db, "users", user.uid, "roomInvites", invite.id));
@@ -373,6 +356,26 @@
         console.error("Error rejecting room invite:", e);
       }
     };
+
+    const getActiveUsers = (users) => {
+          if (!users) return [];
+
+          const now = Date.now();
+
+          return users.filter(user => {
+            if (!user.lastSeen) return true; 
+
+            let lastSeenMs;
+
+            if (user.lastSeen.toDate) {
+              lastSeenMs = user.lastSeen.toDate().getTime();
+            } else {
+              lastSeenMs = new Date(user.lastSeen).getTime();
+            }
+
+            return now - lastSeenMs < ACTIVE_THRESHOLD;
+          });
+        };
     // =======================================================
     // 🖥️ RENDER
     // =======================================================
@@ -476,21 +479,19 @@
                 <button
                   key={room.id}
                   className="roomButton"
-                  onClick={() =>{alert(activeUsersList[room.id]);joinRoom(room)}}
+                  onClick={() =>{alert(activeUsers[room.id]),joinRoom(room)}}
                 >
                 {room.name} {room.adminId === user.uid && <span>👑</span>}
                     <h1 className="roomPplcount">
                         {activeUsers[room.id]}/{room.capacity}👤
                     </h1>
-                          {activeUsersList[room.id] && activeUsersList[room.id].length > 0 && (
-                          <ul className="activeUsersList">
-                                {activeUsersList[room.id].map((user) => (
-                                <li key={user.id}>{user.name}</li>
-                                ))}
-                          </ul>
+                            <ul className="activeUsersList">
+                              {getActiveUsers(activeUsersList[room.id]).map((user) => (
+                                <li key={user.email}>{user.name}</li>
+                              ))}
+                            </ul>
                           
-                          )}
-                          <h1>{mode && remainingSeconds}</h1>
+                          
                   </button>
                   ))}
               </div>
