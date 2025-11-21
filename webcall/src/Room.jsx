@@ -47,7 +47,7 @@ export default function Room() {
   const isLocalUpdate = useRef(false);
   const roomOwnerId = useRef(null);
 
-  useEffect(() => {
+ useEffect(() => {
   if (!roomId || !auth.currentUser) return;
 
   const timerRef = doc(db, "users", auth.currentUser.uid, "rooms", roomId);
@@ -58,10 +58,14 @@ export default function Room() {
     const data = snapshot.data();
     if (!data.timer) return;
 
-    console.log("🔥 Timer received from Firestore:", data.timer);
+    if (isLocalUpdate.current) {
+      isLocalUpdate.current = false;
+      return;
+    }
 
     setMode(data.timer.mode);
     setRemaining(data.timer.remainingSeconds);
+    setIsRunning(data.timer.isRunning || false);
   });
 
   return () => unsubscribe();
@@ -90,40 +94,43 @@ export default function Room() {
     timer:{
     mode,
     remainingSeconds,
+    isRunning: true,
     lastUpdated: serverTimestamp()
     }
   }, { merge: true });
 };
 
-const switchMode = () => {
+const switchMode = async () => {
   // ⛔ Block Firestore from overriding the new mode for 2 seconds
   isLocalUpdate.current = true;
+  const newMode = mode === "study" ? "break" : "study";
+  const newSeconds = newMode === "study" ? studySession * 60 : breakTime * 60;
 
-  if (mode === "study") {
-    const secs = breakTime;
-    setMode("break");
-    setRemaining(secs);
-    updateTimerInDB(roomId, secs, "break");
-  } else {
-    const secs = studySession;
-    setMode("study");
-    setRemaining(secs);
-    updateTimerInDB(roomId, secs, "study");
-  }
+  setMode(newMode);
+  setRemaining(newSeconds);
+  setIsRunning(true);
+  
+  updateTimerInDB(roomId, newSeconds, newMode);
 };
 
 useEffect(() => {
   if (!isRunning) return;
 
     sound.play();
+    const timerRef = doc(db, "users", auth.currentUser.uid, "rooms", roomId);
     const interval = setInterval(() => {
     setRemaining(prev => {
       const updated = prev - 1;
+
+      isLocalUpdate.current = true;
+
+      setDoc(timerRef, { "timer.remainingSeconds": updated }, { merge: true });
+
       if (updated <= 0) {
         switchMode(mode, studySession * 60, breakTime);
         return 0;
       }
-      return updated;
+     return updated;
     });
   }, 1000);
 
@@ -349,33 +356,29 @@ useEffect(() => {
     setNewMessage("");
   };
 
-  const formatTime = (seconds) => {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
+  const formatTime = (secs) => {
+  if (typeof secs !== "number" || isNaN(secs)) return "00:00"
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 };
 
 async function getAndFormatTime() {
   // Example: find a user with a specific email
-  const q = query(
-    collection(db, "users", auth.currentUser.uid, "rooms", roomId, "timers"),
-    where("remainingSeconds", "==", "someValue"),
-  );
+  const timerRef = doc(db, "users", auth.currentUser.uid, "rooms", roomId );
+  const timerSnap = await getDoc(timerRef);
 
-  const querySnapshot = await getDocs(q);
-
-  if (!querySnapshot.empty) {
-    const doc = querySnapshot.docs[0];
-    const data = doc.data();
-
-    const seconds = data.seconds; 
-
-    const formatted = formatTime(seconds);
-    console.log("Formatted time:", formatted);
-  } else {
-    console.log("No document found with that field value!");
-  }
-}
+      if (timerSnap.exists()) {
+        const data = timerSnap.data();
+       const timerData = data.timer;
+      if (!timerData || typeof timerData.remainingSeconds !== "number") {
+        console.log("Timer data is missing or invalid:", timerData);
+      } else {
+        const secs = timerData.remainingSeconds;
+        const formatted = formatTime(secs);
+        console.log("Formatted time:", formatted);
+      }}
+      }
   return (
     <div className="roomPage">
       <div className="room-container">
