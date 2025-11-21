@@ -46,96 +46,85 @@ export default function Room() {
   const [remainingSeconds, setRemaining] = useState(25 * 60);
   const isLocalUpdate = useRef(false);
   const roomOwnerId = useRef(null);
+  const [adminId, setAdminId] = useState(null);
+  const isOwner = auth.currentUser?.uid === adminId;
 
- useEffect(() => {
-  if (!roomId || !auth.currentUser) return;
+  useEffect(() => {
+  if (!roomId) return;
 
-  const timerRef = doc(db, "users", auth.currentUser.uid, "rooms", roomId);
-
-  const unsubscribe = onSnapshot(timerRef, snapshot => {
-    if (!snapshot.exists()) return;
-
-    const data = snapshot.data();
-    if (!data.timer) return;
-
-    if (isLocalUpdate.current) {
-      isLocalUpdate.current = false;
-      return;
-    }
-
-    setMode(data.timer.mode);
-    setRemaining(data.timer.remainingSeconds);
-    setIsRunning(data.timer.isRunning || false);
+  const roomRef = doc(db, "users", auth.currentUser.uid, "rooms", roomId);
+  getDoc(roomRef).then((snap) => {
+    if (!snap.exists()) return;
+    setAdminId(snap.data().adminId);
   });
-
-  return () => unsubscribe();
 }, [roomId]);
 
 
-  useEffect(() => {
-    let interval;
-    if (isRunning && timeLeft > 0) {
-      interval = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
-    }
-    if (timeLeft === 0 && isRunning) {alert,setShowPopup(true)};
-    return () => clearInterval(interval);
-  }, [isRunning, timeLeft]);
+ useEffect(() => {
+  if (!adminId) return;
 
-  const updateTimerInDB = async (roomId, remainingSeconds, mode) => {
-    
+  const timerRef = doc(db, "users", adminId, "rooms", roomId);
+  const unsubscribe = onSnapshot(timerRef, (snapshot) => {
+    if (!snapshot.exists()) return;
 
-  if (mode === undefined || remainingSeconds === undefined) {
-  return;
-}
+    const data = snapshot.data();
+    if (!data.timer) return; 
 
-  const timerRef = doc(db, "users", auth.currentUser.uid, "rooms", roomId);
-  
-  await setDoc(timerRef, {
-    timer:{
-    mode,
-    remainingSeconds,
-    isRunning: true,
-    lastUpdated: serverTimestamp()
-    }
-  }, { merge: true });
+    setMode(data.timer.mode);
+    setRemaining(data.timer.remainingSeconds);
+    setIsRunning(data.timer.isRunning);
+  });
+
+  return () => unsubscribe();
+}, [adminId, roomId]);
+
+  const updateTimerInDB = async (remainingSeconds, mode) => {
+  try {
+    const timerRef = doc(db, "users", adminId, "rooms", roomId);
+
+    await setDoc(timerRef, {
+      timer: {
+        remainingSeconds,
+        mode,
+        isRunning: true,
+        lastUpdated: serverTimestamp(),
+      }
+    }, { merge: true });
+  } catch (error) {
+    console.error("Error updating timer:", error);
+  }
 };
 
-const switchMode = async () => {
-  // ⛔ Block Firestore from overriding the new mode for 2 seconds
-  isLocalUpdate.current = true;
+const switchMode = () => {
   const newMode = mode === "study" ? "break" : "study";
   const newSeconds = newMode === "study" ? studySession * 60 : breakTime * 60;
 
   setMode(newMode);
   setRemaining(newSeconds);
-  setIsRunning(true);
-  
-  updateTimerInDB(roomId, newSeconds, newMode);
+
+  if (isOwner) {
+    updateTimerInDB(newSeconds, newMode); 
+  }
 };
 
 useEffect(() => {
+  if (!isOwner) return;       
   if (!isRunning) return;
 
-    sound.play();
-    const timerRef = doc(db, "users", auth.currentUser.uid, "rooms", roomId);
-    const interval = setInterval(() => {
+  const interval = setInterval(() => {
     setRemaining(prev => {
       const updated = prev - 1;
-
-      isLocalUpdate.current = true;
-
-      setDoc(timerRef, { "timer.remainingSeconds": updated }, { merge: true });
-
       if (updated <= 0) {
-        switchMode(mode, studySession * 60, breakTime);
+        switchMode();
         return 0;
       }
-     return updated;
+      updateTimerInDB(updated, mode);
+      return updated;
     });
   }, 1000);
 
   return () => clearInterval(interval);
-}, [isRunning, mode, breakTime, studySession]);
+}, [isRunning, mode, isOwner]);
 
   useEffect(() => {
   if (!auth.currentUser || !roomId) return;
@@ -261,8 +250,6 @@ useEffect(() => {
       peerConnections.current = {};
       localStreamRef.current?.getTracks().forEach(track => track.stop());
       socket.emit("leave-room", { roomId });
-
-
 
       socket.off("user-joined", handleUserJoined);
       socket.off("offer", handleOffer);
@@ -440,9 +427,9 @@ async function getAndFormatTime() {
 
 
       <div>
-        <button onClick={() => {const secs = 25 ; setRemaining(secs), setbreakTime(5), setMode("study"),setIsRunning(true),setStudySession(25); updateTimerInDB(roomId, secs, "study"); getAndFormatTime();}}>25/5</button> 
-        <button onClick={() => { const secs = 50 ;setRemaining(50 * 60), setbreakTime(10),setMode("study"),setIsRunning(true),setStudySession(50), updateTimerInDB(roomId, secs, "study" )}}>50/10</button> 
-        <button onClick={() => { const secs = 90 ;setRemaining(90 * 60), setbreakTime(15), setMode("study"),setIsRunning(true),setStudySession(90), updateTimerInDB(roomId, secs, "study" )}}>90/15</button> 
+        <button onClick={() => {const secs = 25 ; setRemaining(secs), setbreakTime(5), setMode("study"),setIsRunning(true),setStudySession(25); updateTimerInDB( secs, "study"); getAndFormatTime();}}>25/5</button> 
+        <button onClick={() => { const secs = 50 ;setRemaining(50 * 60), setbreakTime(10),setMode("study"),setIsRunning(true),setStudySession(50), updateTimerInDB( secs, "study" )}}>50/10</button> 
+        <button onClick={() => { const secs = 90 ;setRemaining(90 * 60), setbreakTime(15), setMode("study"),setIsRunning(true),setStudySession(90), updateTimerInDB( secs, "study" )}}>90/15</button> 
         <button onClick={() => { setShowCustomTimerPopup(true), setShowTimerPopup(false)}}>Custom</button> 
 
         <button onClick={() => setShowTimerPopup(false)}>Cancel</button>
@@ -489,7 +476,7 @@ async function getAndFormatTime() {
                setMode("study");
                setIsRunning(true);
                setRemaining(secs);
-               setRemaining(secs);
+               updateTimerInDB( secs, "study");
                setShowCustomTimerPopup(false);
                setStudySession(secs); 
                alert(secs);

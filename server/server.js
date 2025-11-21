@@ -17,37 +17,59 @@ app.get("/", (req, res) => {
   res.send("Socket.IO server is running 🚀");
 });
 
-const rooms = {}; 
+const rooms = {};
+const userToSocket = {};   
+const roomAdmins = {};    
 
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 
-  socket.on("join-room", ({ roomId, email }) => {
+  socket.on("join-room", ({ roomId, email, userId, adminId }) => {
     if (!rooms[roomId]) rooms[roomId] = new Set();
 
-    // 1️⃣ Уведомяване на новия за вече в стаята
-    const existingUsers = Array.from(rooms[roomId]);
-    socket.emit("existing-users", existingUsers);
+    socket.emit("existing-users", Array.from(rooms[roomId]));
 
-    // 2️⃣ Добавяне на новия към стаята
     rooms[roomId].add(socket.id);
     socket.join(roomId);
+
+    userToSocket[userId] = socket.id;
+    socket.userId = userId;
     socket.roomId = roomId;
     socket.email = email;
 
-    // 3️⃣ Уведомяване на останалите за новия
+    if (!roomAdmins[roomId]) {
+      roomAdmins[roomId] = adminId;
+    }
+
     socket.to(roomId).emit("user-joined", { peerId: socket.id, email });
   });
 
-  socket.on("offer", ({ to, offer }) => io.to(to).emit("offer", { from: socket.id, offer }));
-  socket.on("answer", ({ to, answer }) => io.to(to).emit("answer", { from: socket.id, answer }));
-  socket.on("ice-candidate", ({ to, candidate }) => io.to(to).emit("ice-candidate", { from: socket.id, candidate }));
+  socket.on("offer", ({ to, offer }) =>
+    io.to(to).emit("offer", { from: socket.id, offer })
+  );
+
+  socket.on("answer", ({ to, answer }) =>
+    io.to(to).emit("answer", { from: socket.id, answer })
+  );
+
+  socket.on("ice-candidate", ({ to, candidate }) =>
+    io.to(to).emit("ice-candidate", { from: socket.id, candidate })
+  );
+
+  socket.on("timer-action", ({ action, roomId }) => {
+    const adminId = roomAdmins[roomId];
+    const adminSocketId = userToSocket[adminId];
+
+    if (adminSocketId) {
+      io.to(adminSocketId).emit("admin-apply-timer-action", { action });
+    }
+  });
 
   socket.on("leave-room", () => {
     const roomId = socket.roomId;
     if (roomId) {
-      socket.leave(roomId);
       rooms[roomId]?.delete(socket.id);
+      socket.leave(roomId);
       socket.to(roomId).emit("user-left", { peerId: socket.id, email: socket.email });
     }
   });
