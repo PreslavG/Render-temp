@@ -379,7 +379,7 @@ async function getAndFormatTime() {
   <h1>{formatTime(remainingSeconds)}</h1>
   <p>Mode: {mode === "study" ? "📘 Study" : "☕ Break"}</p>
 </div>
-    <button className="breakroomButton" disabled={mode=='study'} onClick={()=> navigate('/breakroom')}>Go to breakroom</button>
+    <button className="breakroomButton" disabled={mode=='study'} onClick={()=> navigate(`/breakroom`)}>Go to breakroom</button>
         <div className="videos">
           <video ref={localVideoRef} autoPlay playsInline muted className="local-video" />
           {remoteStreams.map(remote => <RemoteVideo key={remote.id} stream={remote.stream} />)}

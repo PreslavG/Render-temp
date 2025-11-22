@@ -82,7 +82,7 @@ export default function App() {
         />
 
         <Route
-          path="/Break"
+          path="/breakroom"
           element={user ? <Breakroom /> : <Navigate to="/login" />}
         />
 

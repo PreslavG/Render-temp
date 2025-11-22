@@ -74,22 +74,31 @@ export default function Breakroom() {
 
   /* ------------------------ WEBRTC SETUP ------------------------ */
   useEffect(() => {
-    if (!userEmail) return;
+    if (!userEmail || !localVideoRef.current) return;
 
-    const start = async () => {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true,
-      });
+    const startLocalStream = async () => {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
 
+    if (localVideoRef.current) {
       localVideoRef.current.srcObject = stream;
-      localStreamRef.current = stream;
+    } else {
+      console.warn("Video element not ready yet.");
+      return;
+    }
 
-      if (!socket.connected) socket.connect();
-      socket.emit("join-room", { roomId, email: userEmail });
-    };
+    localStreamRef.current = stream;
 
-    start();
+    if (!socket.connected) socket.connect();
+    socket.emit("join-room", { roomId, email: userEmail });
+
+  } catch (err) {
+    console.error("Cannot access camera/microphone:", err);
+    alert("Cannot access camera/microphone.");
+  }
+};
+
+  startLocalStream();
 
     socket.on("user-joined", ({ peerId }) => handleNewPeer(peerId, true));
     socket.on("offer", ({ from, offer }) => handleIncomingOffer(from, offer));
