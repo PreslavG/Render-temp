@@ -9,14 +9,18 @@ import {
   orderBy,
   onSnapshot,
   serverTimestamp,
+  doc,
+  getDoc,
 } from "firebase/firestore";
 import "./Breakroom.css";
 
 export default function Breakroom() {
-  const { roomId } = useParams();
   const navigate = useNavigate();
+  const { roomIdWithSuffix } = useParams();
+  const roomId = roomIdWithSuffix.replace(/-breakroom$/, "");
 
   const [userEmail, setUserEmail] = useState(null);
+  const [adminId, setAdminId] = useState(null);
 
   // Video refs
   const localVideoRef = useRef();
@@ -33,7 +37,7 @@ export default function Breakroom() {
   const [newMessage, setNewMessage] = useState("");
   const [wide, setWide] = useState(false);
 
-
+  
 
   /* ------------------------ AUTH WATCH ------------------------ */
   useEffect(() => {
@@ -71,6 +75,7 @@ export default function Breakroom() {
 
     setNewMessage("");
   };
+
 
   /* ------------------------ WEBRTC SETUP ------------------------ */
   useEffect(() => {
@@ -193,6 +198,13 @@ export default function Breakroom() {
 
   const leave = () => navigate("/lobby");
 
+
+async function goBack() {
+
+  navigate(`/room/${roomId}`);
+}
+
+  
   /* ------------------------ UI ------------------------ */
   return (
     <div className="roomPage">
@@ -207,6 +219,7 @@ export default function Breakroom() {
 
       <div className="controls">
         <button onClick={leave}>Leave</button>
+        <button onClick={() => goBack()}>Go back</button>
         <button onClick={toggleVideo}>{isVideoOff ? "Start Video" : "Stop Video"}</button>
         <button onClick={toggleMute}>{isMuted ? "Unmute" : "Mute"}</button>
       </div>

@@ -23,7 +23,6 @@ export default function Room() {
   const sound = new Audio("../public/sounds/end.mp3");
   const { roomId } = useParams();
   const navigate = useNavigate();
-  const { state } = useLocation();
   const [userEmail, setUserEmail] = useState(null);
 
   const localVideoRef = useRef();
@@ -34,9 +33,7 @@ export default function Room() {
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
-  const [timeLeft, setTimeLeft] = useState(1);
   const [isRunning, setIsRunning] = useState(false);
-  const [showPopup, setShowPopup] = useState(false);
   const [wide, setWide] = useState(false);
   const [showTimerPopup, setShowTimerPopup] = useState(false);
   const [showCustomTimerPopup, setShowCustomTimerPopup] = useState(false);
@@ -45,7 +42,6 @@ export default function Room() {
   const [mode, setMode] = useState(null);
   const [remainingSeconds, setRemaining] = useState(25 * 60);
   const [showMessage, setShowMessage] = useState(false);
-  const isLocalUpdate = useRef(false);
   const roomOwnerId = useRef(null);
   const [adminId, setAdminId] = useState(null);
   const isOwner = auth.currentUser?.uid === adminId;
@@ -59,6 +55,20 @@ export default function Room() {
     setAdminId(snap.data().adminId);
   });
 }, [roomId]);
+
+
+
+const goToBreakroom = async () => {
+  const ref = doc(db, "users", auth.currentUser.uid , "rooms", roomId, "breakroom", roomId+"breakroom");  
+
+  await setDoc(ref, {
+    roomId: roomId,
+    createdAt: Date.now(),
+    owner: auth.currentUser.uid,
+  });
+
+  navigate(`/breakroom/${roomId}-breakroom`);
+};
 
 
  useEffect(() => {
@@ -379,7 +389,7 @@ async function getAndFormatTime() {
   <h1>{formatTime(remainingSeconds)}</h1>
   <p>Mode: {mode === "study" ? "📘 Study" : "☕ Break"}</p>
 </div>
-    <button className="breakroomButton" disabled={mode=='study'} onClick={()=> navigate(`/breakroom`)}>Go to breakroom</button>
+    <button className="breakroomButton" disabled={mode=='study'} onClick={goToBreakroom}>Go to breakroom</button>
         <div className="videos">
           <video ref={localVideoRef} autoPlay playsInline muted className="local-video" />
           {remoteStreams.map(remote => <RemoteVideo key={remote.id} stream={remote.stream} />)}

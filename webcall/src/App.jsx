@@ -82,7 +82,7 @@ export default function App() {
         />
 
         <Route
-          path="/breakroom"
+          path="/breakroom/:roomIdWithSuffix"
           element={user ? <Breakroom /> : <Navigate to="/login" />}
         />
 
