@@ -44,6 +44,7 @@ export default function Room() {
   const [breakTime, setbreakTime] = useState(5);
   const [mode, setMode] = useState(null);
   const [remainingSeconds, setRemaining] = useState(25 * 60);
+  const [showMessage, setShowMessage] = useState(false);
   const isLocalUpdate = useRef(false);
   const roomOwnerId = useRef(null);
   const [adminId, setAdminId] = useState(null);
@@ -99,6 +100,8 @@ const switchMode = () => {
   const newMode = mode === "study" ? "break" : "study";
   const newSeconds = newMode === "study" ? studySession * 60 : breakTime * 60;
 
+  
+
   setMode(newMode);
   setRemaining(newSeconds);
 
@@ -115,7 +118,8 @@ useEffect(() => {
     setRemaining(prev => {
       const updated = prev - 1;
       if (updated <= 0) {
-        switchMode();
+        clearInterval(interval);
+        setShowMessage(true);
         return 0;
       }
       updateTimerInDB(updated, mode);
@@ -177,6 +181,8 @@ useEffect(() => {
 
   return () => clearInterval(interval);
 }, [roomId, auth.currentUser]);
+
+   
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -373,6 +379,7 @@ async function getAndFormatTime() {
   <h1>{formatTime(remainingSeconds)}</h1>
   <p>Mode: {mode === "study" ? "📘 Study" : "☕ Break"}</p>
 </div>
+    <button className="breakroomButton" disabled={mode=='study'} onClick={()=> navigate('/breakroom')}>Go to breakroom</button>
         <div className="videos">
           <video ref={localVideoRef} autoPlay playsInline muted className="local-video" />
           {remoteStreams.map(remote => <RemoteVideo key={remote.id} stream={remote.stream} />)}
@@ -437,6 +444,21 @@ async function getAndFormatTime() {
     </div>
   </div>
 )}
+
+{showMessage && (
+  <div className="popup-overlay">
+    <div className="popup-box">
+      <p>Time's up!</p>
+      <button onClick={() => {
+        switchMode();       
+        setShowMessage(false); 
+      }}> Stay
+      </button>
+       
+    </div>
+  </div>
+)}
+
 {showCustomTimerPopup && (
   <div className="popup-overlay">
     <div className="customPomodoroPopup">

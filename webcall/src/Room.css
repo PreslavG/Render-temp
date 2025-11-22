@@ -397,7 +397,7 @@ justify-content: center;
 
 .timerDisplay p{
   color: white;
-  margin-top: 1;
+  margin-top: 0;
   font-size: 1rem;
 }
 
@@ -414,6 +414,26 @@ justify-content: center;
   gap: 15px;
   margin-bottom: 20px;
   background-color: #afe29b;
+}
+
+.breakroomButton {
+  position: fixed;
+  top: 20px;              
+  right: 75px; 
+  padding: 8px 16px;
+  background: #08090b;
+  color: white;
+  cursor: pointer;
+  font-family: 'Pelmeshka', 'Luckiest Guy', cursive, sans-serif;
+}
+
+.breakroomButton:hover {
+  background: #ffffff;
+  color: black;
+}
+
+.breakroomButton:disabled {
+  visibility: hidden;
 }
 
 

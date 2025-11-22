@@ -8,19 +8,18 @@ import Login from "./Login";
 import RegistrationForm from "./Register";
 import Lobby from "./Lobby";
 import Room from "./Room";
+import Breakroom from "./Breakroom";
 
 export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 🔹 Track authentication
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       setLoading(false);
 
       if (currentUser) {
-        // ✅ Save / update user profile in Firestore
         const userRef = doc(db, "users", currentUser.uid);
         await setDoc(
           userRef,
@@ -34,7 +33,6 @@ export default function App() {
           { merge: true }
         );
 
-        // ✅ Handle online presence in Realtime Database
         const statusRef = ref(rtdb, `/status/${currentUser.uid}`);
 
         const isOnline = {
@@ -47,10 +45,8 @@ export default function App() {
           last_changed: serverTimestamp(),
         };
 
-        // Set user online
         await set(statusRef, isOnline);
 
-        // Auto-set offline when disconnected
         onDisconnect(statusRef).set(isOffline);
       }
     });
@@ -83,6 +79,11 @@ export default function App() {
         <Route
           path="/room/:roomId"
           element={user ? <Room /> : <Navigate to="/login" />}
+        />
+
+        <Route
+          path="/Break"
+          element={user ? <Breakroom /> : <Navigate to="/login" />}
         />
 
         {/* 🚦 Catch-all redirect */}
