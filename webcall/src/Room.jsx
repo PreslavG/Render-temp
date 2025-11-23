@@ -38,7 +38,7 @@ export default function Room() {
   const [showTimerPopup, setShowTimerPopup] = useState(false);
   const [showCustomTimerPopup, setShowCustomTimerPopup] = useState(false);
   const [studySession, setStudySession] = useState(25);
-  const [breakTime, setbreakTime] = useState(50);
+  const [breakTime, setbreakTime] = useState(40);
   const [mode, setMode] = useState(null);
   const [remainingSeconds, setRemaining] = useState(25);
   const [showMessage, setShowMessage] = useState(false);
@@ -88,6 +88,8 @@ const goToBreakroom = async () => {
     breaktime: breakTime,
     studytime: studySession,
   });
+
+  await deleteDoc(doc(db,"users",auth.currentUser.uid,"rooms",roomId,"activeUsers", auth.currentUser.uid));
 
   navigate(`/breakroom/${roomId}-breakroom`);
 };

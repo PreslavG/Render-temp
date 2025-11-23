@@ -12,10 +12,13 @@ import {
   doc,
   getDoc,
   setDoc,
+  deleteDoc,
 } from "firebase/firestore";
 import "./Breakroom.css";
 
 export default function Breakroom() {
+  const sound = new Audio("../public/sounds/endBreak.mp3");
+  const sound30seconds = new Audio("../public/sounds/30seconds.mp3");
   const navigate = useNavigate();
   const { roomIdWithSuffix } = useParams();
   const roomId = roomIdWithSuffix.replace(/-breakroom$/, "");
@@ -67,11 +70,6 @@ export default function Breakroom() {
     return () => unsub();
   }, [roomId, userEmail]);
 
-  useEffect(() => {
-    console.log("ownerId changed to :", ownerId);
-  });
-
-
 
   /* ------------------------ SEND MESSAGE ------------------------ */
   const sendMessage = async (e) => {
@@ -94,8 +92,17 @@ export default function Breakroom() {
 
   useEffect(() => {
     if (remainingSeconds===0) return;
-    if(remainingSeconds === remainingSeconds - (remainingSeconds - 30)){
-      console.log("30 seconds passed");
+    if(remainingSeconds === remainingSeconds - (remainingSeconds - 30) && mode === "break"){
+      console.log("30 seconds left");
+      sound30seconds.volume = 0.2;
+      sound30seconds.play();
+
+    } 
+
+    if(remainingSeconds === remainingSeconds - (remainingSeconds - 4) && mode === "break"){
+      console.log("bratle 4 sekundi ostavat")
+      sound.volume = 0.2;
+      sound.play();
     }
   }, [remainingSeconds]);
 
@@ -283,6 +290,23 @@ async function goBack() {
   navigate(`/room/${roomId}`);
 }
 
+async function deleteActiveUser() {
+
+  await deleteDoc(doc(db,"users",auth.currentUser.uid,"rooms",roomId,"breakroom", roomId+"breakroom","activeUsers", auth.currentUser.uid));
+  
+  
+}
+
+async function addActiveUser() {
+  const ref = doc(db, "users", auth.currentUser.uid , "rooms", roomId, "activeUsers", auth.currentUser.uid);  
+
+  await setDoc(ref, {
+    roomId: roomId,
+    createdAt: Date.now(),
+  });
+  
+}
+
 useEffect(() => {
   if (!auth.currentUser || !roomId) return;
 
@@ -352,8 +376,8 @@ useEffect(() => {
 
       <div className="controls">
         <button onClick={typeshit}></button>
-        <button onClick={leave}>Leave</button>
-        <button onClick={() => goBack()}>Go back</button>
+        <button onClick={() =>(leave(), deleteActiveUser())}>Go to Lobby</button>
+        <button onClick={() => (addActiveUser(),deleteActiveUser(),goBack())}>Go back</button>
         <button onClick={toggleVideo}>{isVideoOff ? "Start Video" : "Stop Video"}</button>
         <button onClick={toggleMute}>{isMuted ? "Unmute" : "Mute"}</button>
       </div>
