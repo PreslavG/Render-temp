@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import socket from "./scripts/socket";
-import { db, auth } from "./scripts/firebase";
+import { db, auth, set } from "./scripts/firebase";
 import {
   collection,
   addDoc,
@@ -20,7 +20,9 @@ export default function Breakroom() {
   const roomId = roomIdWithSuffix.replace(/-breakroom$/, "");
 
   const [userEmail, setUserEmail] = useState(null);
-  const [adminId, setAdminId] = useState(null);
+  const [ownerId, setOwnerId] = useState();
+  const [mode, setMode] = useState(null);
+  const [remainingSeconds, setRemaining] = useState(25 * 60);
 
   // Video refs
   const localVideoRef = useRef();
@@ -75,6 +77,16 @@ export default function Breakroom() {
 
     setNewMessage("");
   };
+  
+  async function typeshit() {
+
+    console.log("user is :", auth.currentUser.uid);
+    console.log("owner is :", ownerId);
+    console.log("room id is :", roomId);
+    console.log("remaining seconds :", remainingSeconds);
+    console.log("mode is :", mode);
+  }
+
 
 
   /* ------------------------ WEBRTC SETUP ------------------------ */
@@ -204,11 +216,60 @@ async function goBack() {
   navigate(`/room/${roomId}`);
 }
 
+useEffect(() => {
+  if (!auth.currentUser || !roomId) return;
+
+  const fetchAdminId = async () => {
+    const roomRef = doc(db, "users", auth.currentUser.uid, "rooms", roomId);
+    const roomSnap = await getDoc(roomRef);
+
+    if (!roomSnap.exists()) {
+      console.log("Room document not found!");
+      return;
+    }
+
+    setOwnerId(roomSnap.data().adminId);
+  };
+
+  fetchAdminId();
+}, [auth.currentUser, roomId]);
+
+useEffect(() => {
+  if (!ownerId || !roomId) return;
+
+  const roomRef = doc(db, "users", ownerId, "rooms", roomId);
+
+  const unsub = onSnapshot(roomRef, (snap) => {
+    if (!snap.exists()) return;
+
+    const data = snap.data();
+    setMode(data.timer.mode);
+    setRemaining(data.timer.remainingSeconds);
+  });
+
+  return () => unsub();
+}, [ownerId, roomId]);
+
+   useEffect(() => {
+  if (remainingSeconds == null) return;
+
+  const interval = setInterval(() => {
+    setRemaining((prev) => (prev > 0 ? prev - 1 : 0));
+  }, 1000);
+
+  return () => clearInterval(interval);
+}, [remainingSeconds]);
   
   /* ------------------------ UI ------------------------ */
   return (
     <div className="roomPage">
      <div className="room-container-break">
+      <div className="timer-box">
+        <h2>{mode ?? "No mode"}</h2>
+        <h3>{Math.floor(remainingSeconds / 60)}:
+            {String(remainingSeconds % 60).padStart(2, "0")}
+        </h3>
+      </div>
       <div className="videos">
         <video ref={localVideoRef} autoPlay muted playsInline className="local-video" />
 
@@ -218,6 +279,7 @@ async function goBack() {
       </div>
 
       <div className="controls">
+        <button onClick={typeshit}></button>
         <button onClick={leave}>Leave</button>
         <button onClick={() => goBack()}>Go back</button>
         <button onClick={toggleVideo}>{isVideoOff ? "Start Video" : "Stop Video"}</button>

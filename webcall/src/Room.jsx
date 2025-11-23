@@ -40,7 +40,7 @@ export default function Room() {
   const [studySession, setStudySession] = useState(25);
   const [breakTime, setbreakTime] = useState(5);
   const [mode, setMode] = useState(null);
-  const [remainingSeconds, setRemaining] = useState(25 * 60);
+  const [remainingSeconds, setRemaining] = useState(25);
   const [showMessage, setShowMessage] = useState(false);
   const roomOwnerId = useRef(null);
   const [adminId, setAdminId] = useState(null);
@@ -64,7 +64,6 @@ const goToBreakroom = async () => {
   await setDoc(ref, {
     roomId: roomId,
     createdAt: Date.now(),
-    owner: auth.currentUser.uid,
   });
 
   navigate(`/breakroom/${roomId}-breakroom`);
@@ -108,7 +107,7 @@ const goToBreakroom = async () => {
 
 const switchMode = () => {
   const newMode = mode === "study" ? "break" : "study";
-  const newSeconds = newMode === "study" ? studySession * 60 : breakTime * 60;
+  const newSeconds = newMode === "study" ? studySession : breakTime ;
 
   
 
