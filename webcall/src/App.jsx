@@ -57,7 +57,6 @@ export default function App() {
   if (loading) return <p>Loading...</p>;
 
   return (
-    <BrowserRouter>
       <Routes>
         {/* 🔑 Auth Pages */}
         <Route
@@ -92,6 +91,5 @@ export default function App() {
           element={<Navigate to={user ? "/lobby" : "/login"} />}
         />
       </Routes>
-    </BrowserRouter>
   );  
 }
