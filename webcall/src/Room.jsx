@@ -33,29 +33,50 @@ export default function Room() {
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
-  const [isRunning, setIsRunning] = useState(false);
+  const [isRunning, setIsRunning] = useState();
   const [wide, setWide] = useState(false);
   const [showTimerPopup, setShowTimerPopup] = useState(false);
   const [showCustomTimerPopup, setShowCustomTimerPopup] = useState(false);
   const [studySession, setStudySession] = useState(25);
-  const [breakTime, setbreakTime] = useState(5);
+  const [breakTime, setbreakTime] = useState(50);
   const [mode, setMode] = useState(null);
   const [remainingSeconds, setRemaining] = useState(25);
   const [showMessage, setShowMessage] = useState(false);
   const roomOwnerId = useRef(null);
   const [adminId, setAdminId] = useState(null);
   const isOwner = auth.currentUser?.uid === adminId;
+  const user = auth.currentUser;
 
-  useEffect(() => {
-  if (!roomId) return;
 
+ useEffect(() => {
+  if (!roomId || !auth.currentUser) return;
   const roomRef = doc(db, "users", auth.currentUser.uid, "rooms", roomId);
-  getDoc(roomRef).then((snap) => {
-    if (!snap.exists()) return;
+  getDoc(roomRef).then(snap => {
+    if (!snap.exists()) {
+      console.warn("room doc not found at current user's path — adminId read failed");
+      return;
+    }
     setAdminId(snap.data().adminId);
-  });
+  }).catch(err => console.error("failed to read adminId:", err));
 }, [roomId]);
 
+const joinRoom = async (room) => {
+    const activeUsersRef = collection(db, "users", adminId, "rooms", roomId, "breakroom", roomId+"breakroom", "activeUsers");
+    const snapshot = await getDocs(activeUsersRef);
+
+    const totalActive = snapshot.size;
+
+    await setDoc(doc(db, "users", adminId,"rooms", roomId,"breakroom", roomId+"breakroom", "activeUsers", user.uid ), {
+      uid: user.uid,
+      email: user.email,
+      name: user.displayName,
+    });
+
+    console.log(`User ${user.email} joined breakroom. Total active users: ${totalActive}`);
+    console.log(`User ${user.email} joined breakroom.`);
+    console.log(`Acive user: uid: ${user.uid}, email: ${user.email}, name: ${user.displayName}`);
+
+   };
 
 
 const goToBreakroom = async () => {
@@ -64,10 +85,64 @@ const goToBreakroom = async () => {
   await setDoc(ref, {
     roomId: roomId,
     createdAt: Date.now(),
+    breaktime: breakTime,
+    studytime: studySession,
   });
 
   navigate(`/breakroom/${roomId}-breakroom`);
 };
+
+useEffect(() => {
+  if (!adminId || !roomId) return;
+
+  const activeMainRef = collection(
+    db,
+    "users",
+    adminId,
+    "rooms",
+    roomId,
+    "activeUsers"
+  );
+
+  const activeBreakRef = collection(
+    db,
+    "users",
+    adminId,
+    "rooms",
+    roomId,
+    "breakroom",
+    roomId + "breakroom",
+    "activeUsers"
+  );
+
+  let mainCount = 0;
+  let breakCount = 0;
+
+  const unsubMain = onSnapshot(activeMainRef, (snapshot) => {
+    mainCount = snapshot.size;
+    checkBoth();
+  });
+
+  const unsubBreak = onSnapshot(activeBreakRef, (snapshot) => {
+    breakCount = snapshot.size;
+    checkBoth();
+  });
+
+  function checkBoth() {
+  if (mainCount + breakCount === 0) { 
+    console.log("⚠️ Both rooms empty — stopping timer");
+    setIsRunning(false);
+    updateTimerInDB(remainingSeconds, mode, false);
+  } else {
+    setIsRunning(true); 
+  }
+}
+
+  return () => {
+    unsubMain();
+    unsubBreak();
+  };
+}, [adminId, roomId, remainingSeconds, mode]);
 
 
  useEffect(() => {
@@ -88,15 +163,19 @@ const goToBreakroom = async () => {
   return () => unsubscribe();
 }, [adminId, roomId]);
 
-  const updateTimerInDB = async (remainingSeconds, mode) => {
+  const updateTimerInDB = async (remainingSeconds, mode, isRunning = true) => {
+  if (!adminId) {
+    // nothing to write yet — adminId not known
+    console.warn("updateTimerInDB: adminId not available yet");
+    return;
+  }
   try {
     const timerRef = doc(db, "users", adminId, "rooms", roomId);
-
     await setDoc(timerRef, {
       timer: {
         remainingSeconds,
         mode,
-        isRunning: true,
+        isRunning,
         lastUpdated: serverTimestamp(),
       }
     }, { merge: true });
@@ -115,29 +194,34 @@ const switchMode = () => {
   setRemaining(newSeconds);
 
   if (isOwner) {
-    updateTimerInDB(newSeconds, newMode); 
+    updateTimerInDB(newSeconds, newMode, true); 
   }
 };
 
 useEffect(() => {
-  if (!isOwner) return;       
   if (!isRunning) return;
+  if (!adminId) {
+    console.warn("Timer running locally but adminId not ready — waiting to sync");
+  }
 
   const interval = setInterval(() => {
     setRemaining(prev => {
-      const updated = prev - 1;
+      const updated = prev > 0 ? prev - 1 : 0;
+
+      if (adminId && isOwner) {
+        updateTimerInDB(updated, mode, true);
+      }
+
       if (updated <= 0) {
         clearInterval(interval);
         setShowMessage(true);
-        return 0;
       }
-      updateTimerInDB(updated, mode);
       return updated;
     });
   }, 1000);
 
   return () => clearInterval(interval);
-}, [isRunning, mode, isOwner]);
+}, [isRunning, mode, adminId, isOwner]);
 
   useEffect(() => {
   if (!auth.currentUser || !roomId) return;
@@ -162,7 +246,6 @@ useEffect(() => {
   let interval;
 
   const setupHeartbeat = async () => {
-    // Get room admin
     const roomRef = doc(db, "users", auth.currentUser.uid, "rooms", roomId);
     const roomSnap = await getDoc(roomRef);
     if (!roomSnap.exists()) return;
@@ -170,16 +253,14 @@ useEffect(() => {
     roomOwnerId.current = roomSnap.data().ownerId;
     if (!roomOwnerId.current) return;
 
-    // Initial heartbeat
-    await setDoc(doc(db, "users", roomOwnerId, "rooms", roomId, "activeUsers", auth.currentUser.uid), {
+    await setDoc(doc(db, "users", roomOwnerId.current, "rooms", roomId, "activeUsers", auth.currentUser.uid), {
       email: auth.currentUser.email,
       name: auth.currentUser.displayName,
       lastSeen: serverTimestamp(),
     }, { merge: true });
 
-    // Update heartbeat every 5 seconds
     interval = setInterval(() => {
-      setDoc(doc(db, "users", roomOwnerId, "rooms", roomId, "activeUsers", auth.currentUser.uid), 
+      setDoc(doc(db, "users", roomOwnerId.current, "rooms", roomId, "activeUsers", auth.currentUser.uid), 
       {
         lastSeen: serverTimestamp()},
        { merge: true });
@@ -388,7 +469,7 @@ async function getAndFormatTime() {
   <h1>{formatTime(remainingSeconds)}</h1>
   <p>Mode: {mode === "study" ? "📘 Study" : "☕ Break"}</p>
 </div>
-    <button className="breakroomButton" disabled={mode=='study'} onClick={goToBreakroom}>Go to breakroom</button>
+    <button className="breakroomButton" disabled={mode=='study'} onClick={() => {goToBreakroom(), joinRoom()}}>Go to breakroom</button>
         <div className="videos">
           <video ref={localVideoRef} autoPlay playsInline muted className="local-video" />
           {remoteStreams.map(remote => <RemoteVideo key={remote.id} stream={remote.stream} />)}
@@ -443,7 +524,7 @@ async function getAndFormatTime() {
 
 
       <div>
-        <button onClick={() => {const secs = 25 ; setRemaining(secs), setbreakTime(5), setMode("study"),setIsRunning(true),setStudySession(25); updateTimerInDB( secs, "study"); getAndFormatTime();}}>25/5</button> 
+        <button onClick={() => {const secs = 20 ; setRemaining(secs), setbreakTime(5), setMode("study"),setIsRunning(true),setStudySession(25); updateTimerInDB( secs, "study"); getAndFormatTime();}}>25/5</button> 
         <button onClick={() => { const secs = 50 ;setRemaining(50 * 60), setbreakTime(10),setMode("study"),setIsRunning(true),setStudySession(50), updateTimerInDB( secs, "study" )}}>50/10</button> 
         <button onClick={() => { const secs = 90 ;setRemaining(90 * 60), setbreakTime(15), setMode("study"),setIsRunning(true),setStudySession(90), updateTimerInDB( secs, "study" )}}>90/15</button> 
         <button onClick={() => { setShowCustomTimerPopup(true), setShowTimerPopup(false)}}>Custom</button> 

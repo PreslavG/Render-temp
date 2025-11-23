@@ -1,7 +1,7 @@
 import { use, useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import socket from "./scripts/socket";
-import { db, auth, set } from "./scripts/firebase";
+import { db, auth } from "./scripts/firebase";
 import {
   collection,
   addDoc,
@@ -11,6 +11,7 @@ import {
   serverTimestamp,
   doc,
   getDoc,
+  setDoc,
 } from "firebase/firestore";
 import "./Breakroom.css";
 
@@ -23,6 +24,10 @@ export default function Breakroom() {
   const [ownerId, setOwnerId] = useState();
   const [mode, setMode] = useState(null);
   const [remainingSeconds, setRemaining] = useState(25 * 60);
+  const [isRunning, setIsRunning] = useState(false);
+  const [BreakTime, setBreakTime] = useState();
+  const [StudyTime, setStudyTime]= useState();
+
 
   // Video refs
   const localVideoRef = useRef();
@@ -38,8 +43,6 @@ export default function Breakroom() {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [wide, setWide] = useState(false);
-
-  
 
   /* ------------------------ AUTH WATCH ------------------------ */
   useEffect(() => {
@@ -64,6 +67,12 @@ export default function Breakroom() {
     return () => unsub();
   }, [roomId, userEmail]);
 
+  useEffect(() => {
+    console.log("ownerId changed to :", ownerId);
+  });
+
+
+
   /* ------------------------ SEND MESSAGE ------------------------ */
   const sendMessage = async (e) => {
     e.preventDefault();
@@ -79,14 +88,72 @@ export default function Breakroom() {
   };
   
   async function typeshit() {
-
-    console.log("user is :", auth.currentUser.uid);
-    console.log("owner is :", ownerId);
-    console.log("room id is :", roomId);
-    console.log("remaining seconds :", remainingSeconds);
-    console.log("mode is :", mode);
+    console.log("Study time is :", StudyTime);
+    console.log("Break time is: ", BreakTime);
   }
 
+  useEffect(() => {
+    if (remainingSeconds===0) return;
+    if(remainingSeconds === remainingSeconds - (remainingSeconds - 30)){
+      console.log("30 seconds passed");
+    }
+  }, [remainingSeconds]);
+
+  useEffect(() => {
+  if (!roomId) return;
+
+  const StudyAndBreakTimes = async () => {
+    const roomRef = doc(db, "users", auth.currentUser.uid, "rooms", roomId, "breakroom", roomId+"breakroom");
+    const roomSnap = await getDoc(roomRef);
+
+    if (!roomSnap.exists()) {
+      console.log("Room document not found!");
+      return;
+    }
+
+    setStudyTime(roomSnap.data().studytime);
+    setBreakTime(roomSnap.data().breaktime);
+
+  }
+
+  StudyAndBreakTimes();
+}, [roomId]);
+
+useEffect(() => {
+  if (!isRunning || !ownerId || !StudyTime || !BreakTime) return;
+
+  const interval = setInterval(() => {
+    setRemaining(prev => {
+      if (prev > 0) {
+        updateTimerInDB(prev - 1, mode, true);
+        return prev - 1;
+      } else {
+        // time is up, switch mode
+        const newMode = mode === "study" ? "break" : "study";
+        const newSeconds = newMode === "study" ? StudyTime : BreakTime;
+
+        updateTimerInDB(newSeconds, newMode, true);
+        setMode(newMode);
+        return newSeconds;
+      }
+    });
+  }, 1000);
+
+  return () => clearInterval(interval);
+}, [isRunning, ownerId, mode, StudyTime, BreakTime]);
+
+const switchMode = () => {
+  const newMode = mode === "break" ? "study" : "break";
+  const newSeconds = newMode === "break" ? BreakTime : StudyTime ;
+
+  
+
+  setMode(newMode);
+  setRemaining(newSeconds);
+
+  
+    updateTimerInDB(newSeconds, newMode, true); 
+}
 
 
   /* ------------------------ WEBRTC SETUP ------------------------ */
@@ -234,42 +301,47 @@ useEffect(() => {
   fetchAdminId();
 }, [auth.currentUser, roomId]);
 
+/* ------------------------ READ TIMER FROM OWNER ------------------------ */
 useEffect(() => {
   if (!ownerId || !roomId) return;
 
   const roomRef = doc(db, "users", ownerId, "rooms", roomId);
-
-  const unsub = onSnapshot(roomRef, (snap) => {
+  const unsub = onSnapshot(roomRef, snap => {
     if (!snap.exists()) return;
-
-    const data = snap.data();
-    setMode(data.timer.mode);
-    setRemaining(data.timer.remainingSeconds);
+    const timer = snap.data().timer;
+    setRemaining(timer.remainingSeconds);
+    setMode(timer.mode);
+    setIsRunning(true);
   });
 
   return () => unsub();
 }, [ownerId, roomId]);
 
-   useEffect(() => {
-  if (remainingSeconds == null) return;
+  const updateTimerInDB = async (remainingSeconds, mode, isRunning = true) => {
+  if (!ownerId) {
+    // nothing to write yet — ownerId not known
+    return;
+  }
+  try {
+    const timerRef = doc(db, "users", ownerId, "rooms", roomId);
+    await setDoc(timerRef, {
+      timer: {
+        remainingSeconds,
+        mode,
+        isRunning,
+        lastUpdated: serverTimestamp(),
+      }
+    }, { merge: true });
+  } catch (error) {
+    console.error("Error updating timer:", error);
+  }
+};
 
-  const interval = setInterval(() => {
-    setRemaining((prev) => (prev > 0 ? prev - 1 : 0));
-  }, 1000);
-
-  return () => clearInterval(interval);
-}, [remainingSeconds]);
   
   /* ------------------------ UI ------------------------ */
   return (
     <div className="roomPage">
      <div className="room-container-break">
-      <div className="timer-box">
-        <h2>{mode ?? "No mode"}</h2>
-        <h3>{Math.floor(remainingSeconds / 60)}:
-            {String(remainingSeconds % 60).padStart(2, "0")}
-        </h3>
-      </div>
       <div className="videos">
         <video ref={localVideoRef} autoPlay muted playsInline className="local-video" />
 
@@ -285,6 +357,13 @@ useEffect(() => {
         <button onClick={toggleVideo}>{isVideoOff ? "Start Video" : "Stop Video"}</button>
         <button onClick={toggleMute}>{isMuted ? "Unmute" : "Mute"}</button>
       </div>
+
+        <div className="timerDisplay">
+          <h1>{Math.floor(remainingSeconds / 60)}:
+            {String(remainingSeconds % 60).padStart(2, "0")}</h1>
+            <p>Mode: {mode === "study" ? "📘 Study" : "☕ Break"}</p>
+             
+        </div>
 
        <div className={`chatBox ${wide ? "wide" : "narrow"}`}>
         {wide ? (

@@ -227,6 +227,10 @@ body, html, #root, .room-page {
   border: 3px solid rgba(0,0,0);
 }
 
+video:empty{
+  background-color: #4b4e49;
+}
+
 .controls {
   display: flex;
   gap: 12px;
