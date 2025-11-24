@@ -20,7 +20,7 @@ import {
 import "./Room.css";
 
 export default function Room() {
-  const sound = new Audio("../public/sounds/end.mp3");
+  const sound = new Audio("/sounds/end.mp3");
   const { roomId } = useParams();
   const navigate = useNavigate();
   const [userEmail, setUserEmail] = useState(null);
