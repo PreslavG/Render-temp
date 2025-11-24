@@ -17,8 +17,8 @@ import {
 import "./Breakroom.css";
 
 export default function Breakroom() {
-  const sound = new Audio("../public/sounds/endBreak.mp3");
-  const sound30seconds = new Audio("../public/sounds/30seconds.mp3");
+  const sound = new Audio("/sounds/endBreak.mp3");
+  const sound30seconds = new Audio("/sounds/30seconds.mp3");
   const navigate = useNavigate();
   const { roomIdWithSuffix } = useParams();
   const roomId = roomIdWithSuffix.replace(/-breakroom$/, "");
