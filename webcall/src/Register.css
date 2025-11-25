@@ -68,7 +68,7 @@
   padding: 0.8rem 1rem;
   border-radius: 0.75rem;
   border: none;
-  background-color: #c17e74;
+  background-color: #2e4543;
   color: white;
   font-size: 1rem;
   cursor: pointer;
@@ -78,7 +78,7 @@
 }
 
 .registerButton:hover {
-  background-color: #5f2e0f;
+  background-color: #0e291c;
   transform: translateY(-2px);
 }
 

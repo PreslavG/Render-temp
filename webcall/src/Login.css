@@ -14,11 +14,10 @@
   content: "";
   position: absolute;
   inset: 0;  
-   background-image: url(https://img.freepik.com/free-photo/3d-rendering-cartoon-welcome-door_23-2151645397.jpg?semt=ais_hybrid&w=740&q=80);
+  background: url("../public/images/login-page.jpg");
   background-position: center;
   background-size: cover;
   overflow-x: hidden;
-  filter: blur(2px);
   z-index: -1;   
 }
 .loginReturn {
@@ -65,16 +64,17 @@
   padding: 0.8rem 1rem;
   border-radius: 0.75rem;
   border: none;
-  background-color: #c17e74;
+  background-color: #2e4543;
   color: white;
   font-size: 1rem;
   cursor: pointer;
   font-family: 'Pelmeshka', 'Luckiest Guy', cursive, sans-serif;
   transition: background-color 0.25s, transform 0.2s;
+  border: 1px black solid;
 }
 
 .loginButton:hover {
-  background-color: #5f2e0f;
+  background-color: #0e291c;
   transform: translateY(-2px);
 }
 

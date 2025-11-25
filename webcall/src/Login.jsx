@@ -64,9 +64,8 @@ export default function Login() {
     <div className="Page">
       <div className="loginReturn">
         <div className="lobbyInfo">
-        <h1 className="lobbyTitle">Online Classroom</h1>
-        <h1 className="infoText">You are now in the lobby of the online classroom!</h1>
-        <p className="infoTextParagraph">Remember to take breaks!</p>
+        <h1 className="lobbyTitle">Synapse Study Hub</h1>
+        <h1 className="infoText">Studying is better with friends!</h1>
 
 
       </div>

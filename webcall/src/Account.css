@@ -1,0 +1,41 @@
+
+
+
+.Account_info{
+    display: flex;
+    flex-direction: column;
+    background-color: rgb(254, 254, 254);
+    align-items: center;
+    justify-content: center;
+    border: 2px black solid;
+    text-align: center;
+}
+
+.AccountPage{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: blanchedalmond;
+}
+
+.AccountElements{
+    display: flex;
+    position: fixed;
+    flex-direction: row;
+    background-color: blue;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 120vh;
+    height: 70vh;
+}
+.accountPicture{
+    width: 200px;
+    height: 200px;
+    padding: 0;
+    border-radius: 100%;
+    border: 2px solid rgb(0, 0, 0);
+    margin: 20px;
+    margin-bottom: 0;
+    
+}

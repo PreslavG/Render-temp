@@ -9,6 +9,7 @@ import RegistrationForm from "./Register";
 import Lobby from "./Lobby";
 import Room from "./Room";
 import Breakroom from "./Breakroom";
+import Account from "./Account";
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -27,8 +28,8 @@ export default function App() {
             uid: currentUser.uid,
             name: currentUser.displayName || "Anonymous",
             email: currentUser.email,
-            photoURL: currentUser.photoURL || "",
             lastLogin: fsTimestamp(),
+            profilePic: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTHfd3PPulVSp4ZbuBFNkePoUR_fLJQe474Ag&s"
           },
           { merge: true }
         );
@@ -83,6 +84,11 @@ export default function App() {
         <Route
           path="/breakroom/:roomIdWithSuffix"
           element={user ? <Breakroom /> : <Navigate to="/login" />}
+        />
+
+        <Route
+          path="/account"
+          element={user ? <Account/> : <Navigate to="/login" />}
         />
 
         {/* 🚦 Catch-all redirect */}
