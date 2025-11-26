@@ -20,6 +20,7 @@
   overflow-x: hidden;
   z-index: -1;   
 }
+
 .loginReturn {
   display: flex;
   flex-direction: row;
@@ -32,7 +33,7 @@
 }
 
 .login.title {
-  font-family: 'Pelmeshka', 'Luckiest Guy', cursive, sans-serif;
+  font-family: monospace;
   margin-bottom: 1.5rem;
   font-size: 2rem;
   color: #333;
@@ -68,7 +69,7 @@
   color: white;
   font-size: 1rem;
   cursor: pointer;
-  font-family: 'Pelmeshka', 'Luckiest Guy', cursive, sans-serif;
+  font-family: monospace;
   transition: background-color 0.25s, transform 0.2s;
   border: 1px black solid;
 }
@@ -126,5 +127,11 @@
 
   
 }
+
+#LogoLogin{
+  width: 6%;
+  height: 500px;
+}
+
 
 

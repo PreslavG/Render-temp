@@ -2,7 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { auth, db, rtdb, ref, set, onDisconnect, serverTimestamp } from "./scripts/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, setDoc, serverTimestamp as fsTimestamp } from "firebase/firestore";
+import { doc, setDoc, getDoc, serverTimestamp as fsTimestamp } from "firebase/firestore";
 
 import Login from "./Login";
 import RegistrationForm from "./Register";
@@ -10,6 +10,9 @@ import Lobby from "./Lobby";
 import Room from "./Room";
 import Breakroom from "./Breakroom";
 import Account from "./Account";
+
+import Layout from "./LayoutLogoNavbar";
+import LayoutLogo from "./LayoutLogo";   // ← ADD THIS
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -22,33 +25,35 @@ export default function App() {
 
       if (currentUser) {
         const userRef = doc(db, "users", currentUser.uid);
-        await setDoc(
-          userRef,
-          {
+        const existing = await getDoc(userRef);
+
+        if (!existing.exists()) {
+          await setDoc(userRef, {
             uid: currentUser.uid,
             name: currentUser.displayName || "Anonymous",
             email: currentUser.email,
             lastLogin: fsTimestamp(),
             profilePic: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTHfd3PPulVSp4ZbuBFNkePoUR_fLJQe474Ag&s"
-          },
-          { merge: true }
-        );
+          });
+        } else {
+          await setDoc(
+            userRef,
+            { lastLogin: fsTimestamp() },
+            { merge: true }
+          );
+        }
 
         const statusRef = ref(rtdb, `/status/${currentUser.uid}`);
 
-        const isOnline = {
+        await set(statusRef, {
           state: "online",
           last_changed: serverTimestamp(),
-        };
+        });
 
-        const isOffline = {
+        onDisconnect(statusRef).set({
           state: "offline",
           last_changed: serverTimestamp(),
-        };
-
-        await set(statusRef, isOnline);
-
-        onDisconnect(statusRef).set(isOffline);
+        });
       }
     });
 
@@ -59,23 +64,25 @@ export default function App() {
 
   return (
       <Routes>
-        {/* 🔑 Auth Pages */}
         <Route
           path="/login"
-          element={!user ? <Login /> : <Navigate to="/lobby" />}
+          element={
+            <LayoutLogo>
+                    {!user ? <Login /> : <Navigate to="/lobby" />}
+            </LayoutLogo>
+            }
         />
+
         <Route
           path="/register"
           element={!user ? <RegistrationForm /> : <Navigate to="/lobby" />}
         />
 
-        {/* 🏠 Lobby */}
         <Route
           path="/lobby"
-          element={user ? <Lobby /> : <Navigate to="/login" />}
+          element={<Layout>{user ? <Lobby /> : <Navigate to="/login" />}</Layout>}
         />
 
-        {/* 🎥 Room */}
         <Route
           path="/room/:roomId"
           element={user ? <Room /> : <Navigate to="/login" />}
@@ -88,14 +95,13 @@ export default function App() {
 
         <Route
           path="/account"
-          element={user ? <Account/> : <Navigate to="/login" />}
+          element={<Layout>{user ? <Account /> : <Navigate to="/login" />}</Layout>}
         />
 
-        {/* 🚦 Catch-all redirect */}
         <Route
           path="*"
           element={<Navigate to={user ? "/lobby" : "/login"} />}
         />
       </Routes>
-  );  
+  );
 }

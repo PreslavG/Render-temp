@@ -64,8 +64,7 @@ export default function Login() {
     <div className="Page">
       <div className="loginReturn">
         <div className="lobbyInfo">
-        <h1 className="lobbyTitle">Synapse Study Hub</h1>
-        <h1 className="infoText">Studying is better with friends!</h1>
+          <img src="logo_image.png" id="LogoLogin"/>
 
 
       </div>

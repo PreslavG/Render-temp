@@ -247,7 +247,7 @@ video:empty{
     height: 40px;
     width: 110px;
     cursor: pointer;
-    font-family: 'Pelmeshka', 'Luckiest Guy', cursive, sans-serif;
+    font-family: monospace;
   padding: 8px 16px;
   background: #08090b;
   color: white;
@@ -279,7 +279,7 @@ video:empty{
   border: 3px solid black;
   margin-top: 0;
   font-size: 30px;
-  font-family: 'Pelmeshka', 'Luckiest Guy', cursive, sans-serif;
+  font-family: monospace;
   text-shadow: 2px 2px 30px rgb(255, 255, 255);
   color: wheat;
   
@@ -296,7 +296,7 @@ video:empty{
   width: 175px;
    background-color: rgba(0, 0, 0, 0.7);
   border-radius: 20%;
-  font-family: 'Arial', sans-serif;
+  font-family: monospace;
   margin: 0;
 
 }
@@ -306,7 +306,7 @@ video:empty{
   text-align: center;
   font-size: 20px;
   margin-bottom: 20px;
-  font-family: 'Pelmeshka', 'Luckiest Guy', cursive, sans-serif;
+  font-family: monospace;
   text-shadow: 2px 2px 10px rgb(255, 255, 255);
   color: rgb(0, 0, 0);
   
@@ -323,7 +323,7 @@ video:empty{
 }
 
 .startPomodoro {
-  font-family: 'Pelmeshka', 'Luckiest Guy', cursive, sans-serif;
+  font-family: monospace;
   padding: 8px 16px;
   padding-top: 0  ;
   background: #08090b;
@@ -428,7 +428,7 @@ justify-content: center;
   background: #08090b;
   color: white;
   cursor: pointer;
-  font-family: 'Pelmeshka', 'Luckiest Guy', cursive, sans-serif;
+  font-family: monospace;
 }
 
 .breakroomButton:hover {

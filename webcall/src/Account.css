@@ -1,41 +1,144 @@
 
 
-
 .Account_info{
     display: flex;
     flex-direction: column;
     background-color: rgb(254, 254, 254);
     align-items: center;
     justify-content: center;
-    border: 2px black solid;
+    border-right: 2px black solid;
     text-align: center;
-}
+    border-radius: 20px;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    font-family: 'Fira Code', monospace;
+    font-weight: 10000;  
+    
 
-.AccountPage{
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: blanchedalmond;
 }
 
 .AccountElements{
     display: flex;
     position: fixed;
     flex-direction: row;
-    background-color: blue;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     width: 120vh;
     height: 70vh;
+    border: 2px solid black;
+    border-radius: 20px;
+    box-shadow: 0 2px 4px 2px rgba(255, 255, 255, 0.2), 0 2px 4px 2px rgba(255, 255, 255, 0.2);
+    
 }
 .accountPicture{
     width: 200px;
     height: 200px;
     padding: 0;
     border-radius: 100%;
-    border: 2px solid rgb(0, 0, 0);
     margin: 20px;
     margin-bottom: 0;
     
 }
+
+
+
+.Elements{
+    width: 100%;
+    background-color: rgb(255, 255, 255);
+    display: flex;
+    align-items: start;
+    justify-content: center;
+    flex-direction: column;
+    border-left: 0;
+    border-radius: 20px ;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+
+}
+
+.elementList{
+    font-size: 8px;
+    gap: 40px;
+    font-family: monospace;
+    margin-left: 20px;
+}
+
+.AccountPage{
+    width: 100%;
+    height: 100vh;
+    background: url("/images/account_background.jpg");
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
+.profileDiv{
+    margin-bottom:20px ;
+}
+
+.Edit{
+    margin-top: 150px;
+    font-family: monospace;
+    font-weight: bold;
+    background-color: black;
+    color: white;
+    border: 1px solid white;
+    padding: 5px;
+    border-top-left-radius: 20px;
+    border-bottom-left-radius: 20px;
+    border-top-right-radius: 20px;
+    border-bottom-right-radius: 20px;
+    cursor: pointer;
+    margin-right: 10px;
+    padding: 10px;
+}
+
+.Elements input{
+    background-color: rgb(222, 223, 223);
+    border: 1px solid black;
+    border-radius: 10%;
+    height: 30px;
+}
+
+.uploadButton{
+    background-color: black;
+    color: white;
+    border: 1px solid white;
+    padding: 5px;
+    border-top-left-radius: 20px;
+    border-bottom-left-radius: 20px;
+    border-top-right-radius: 20px;
+    border-bottom-right-radius: 20px;
+    cursor: pointer;
+    margin: 5px;
+    font-family: monospace;
+}
+.Save{
+     background-color: rgb(124, 202, 113);
+    color: white;
+    border: 1px solid white;
+    border-top-left-radius: 20px;
+    border-bottom-left-radius: 20px;
+    border-top-right-radius: 20px;
+    border-bottom-right-radius: 20px;
+    cursor: pointer;
+    margin: 5px;
+    font-family: monospace;
+    margin-right: 20px;
+    padding: 5px;
+}
+.Logout{
+     background-color: rgb(174, 61, 61);
+    color: white;
+    border: 1px solid white;
+    border-top-left-radius: 20px;
+    border-bottom-left-radius: 20px;
+    border-top-right-radius: 20px;
+    border-bottom-right-radius: 20px;
+    cursor: pointer;
+    margin: 5px;
+    font-family: monospace;
+    padding: 5px;
+}
+
+

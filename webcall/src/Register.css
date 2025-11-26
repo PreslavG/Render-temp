@@ -36,7 +36,7 @@
 }
 
 .registerTitle {
-  font-family: 'Pelmeshka', 'Luckiest Guy', cursive, sans-serif;
+  font-family: monospace;
   margin-bottom: 1.5rem;
   font-size: 2rem;
   color: #333;
@@ -72,7 +72,7 @@
   color: white;
   font-size: 1rem;
   cursor: pointer;
-  font-family: 'Pelmeshka', 'Luckiest Guy', cursive, sans-serif;
+  font-family: monospace;
   transition: background-color 0.25s, transform 0.2s;
   margin-top: 20px;
 }
