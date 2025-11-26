@@ -10,6 +10,7 @@ import Lobby from "./Lobby";
 import Room from "./Room";
 import Breakroom from "./Breakroom";
 import Account from "./Account";
+import Files from "./Files";
 
 import Layout from "./LayoutLogoNavbar";
 import LayoutLogo from "./LayoutLogo";   // ← ADD THIS
@@ -96,6 +97,11 @@ export default function App() {
         <Route
           path="/account"
           element={<Layout>{user ? <Account /> : <Navigate to="/login" />}</Layout>}
+        />
+
+        <Route
+          path="/files"
+          element={<Layout>{user ? <Files /> : <Navigate to="/login" />}</Layout>}
         />
 
         <Route

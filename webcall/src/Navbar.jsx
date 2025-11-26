@@ -51,6 +51,10 @@ export default function Navbar() {
   return (
     <nav
     >
+        <button className="navButton"
+          onClick={() => navigate("/files")} >
+          Files
+        </button>
 
         <button className="navButton"
           onClick={() => navigate("/lobby")} >
