@@ -59,9 +59,29 @@
             font-family: monospace;
 
             
-        }   
+        } 
+        .navButtonLogout{
+            
+            color: rgb(255, 255, 255);
+            padding: 5px;
+            font-size: 20px;
+            cursor: pointer;
+            height: 50px;
+            background-color: black;
+            border: black;
+            font-family: monospace;
+
+            
+        } 
+        
+        .navButtonLogout:hover{
+            background-color: red;
+            border-radius: 12px;
+        }
 
         .navButton:hover{
             background-color: rgb(134, 153, 138);
             color: black;
+            border-radius: 12px;
+
         }

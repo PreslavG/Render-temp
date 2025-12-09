@@ -1,24 +1,15 @@
  
-import { use, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { storage } from "./scripts/firebase"; 
 import { ref,listAll, uploadBytes, getDownloadURL } from "firebase/storage";
 import { signOut } from "firebase/auth";
-import { sendEmailVerification, updateEmail, updateProfile, EmailAuthProvider, reauthenticateWithCredential, verifyBeforeUpdateEmail} from "firebase/auth";
+import {  updateProfile, EmailAuthProvider, reauthenticateWithCredential, verifyBeforeUpdateEmail} from "firebase/auth";
 import Modal from "react-modal";
-import { useParams, useNavigate} from "react-router-dom";
-import socket from "./scripts/socket";
 import { db, auth } from "./scripts/firebase";
 import {
-  collection,
-  addDoc,
-  query,
-  orderBy,
-  onSnapshot,
-  serverTimestamp,
   doc,
   getDoc,
   setDoc,
-  deleteDoc,
 } from "firebase/firestore";
 import "./Account.css";
 import { FaUpload } from "react-icons/fa";
@@ -113,6 +104,7 @@ Modal.setAppElement("#root");
   await setDoc(docRef, { profilePic: photourl }, { merge: true });
 
    setProfilePic(photourl);
+   window.location.reload();
    console.log("ProficePic Link is set to: ", photourl);
 
 };
@@ -200,7 +192,7 @@ const reauthenticateUser = async (password) => {
           />
         ) : (
           <img
-            src={profilePic}   // ← your default image here
+            src={profilePic}  
             alt="Default"
             width={150}
             height={150}
@@ -291,7 +283,6 @@ const reauthenticateUser = async (password) => {
               {!locked && (
                 <button className="Edit" onClick={saveChanges}>Save Changes</button>
               )}
-
 
           </div>
           </div>

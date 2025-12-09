@@ -3,6 +3,7 @@
 
 body {
     overflow-y: hidden;
+    height: 100%;
 }
 .room-container{
   padding: 5px;

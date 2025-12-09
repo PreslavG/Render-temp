@@ -446,8 +446,19 @@
           </div>
         )}
 
-        {/* Tabs */}
-        <div className="tabButtons">
+        <div className="buttonList1">
+          <h1>hello</h1>
+        </div>
+        <div className="buttonList2">
+          Trying
+        </div>
+        <div className="buttonList3">Broo</div>
+
+        {/* Rooms Tab */}
+        {activeTab === "rooms" && (
+          
+          <div className="buttonList">
+            <div className="tabButtons">
           <button
             className={activeTab === "rooms" ? "activeTab" : ""}
             onClick={() => setActiveTab("rooms")}
@@ -464,10 +475,6 @@
             +
           </button>
         </div>
-
-        {/* Rooms Tab */}
-        {activeTab === "rooms" && (
-          <div className="buttonList">
             <div className="TitlesAndRooms">
               <h1 className="buttonlistTitle">Available Rooms:</h1>
               <div className="RoomsButtons">
@@ -495,10 +502,7 @@
             <div className="buttons">
               <button onClick={() => setIsRoomPopupOpen(true)} className="lobbyButton">
                 Add Room
-              </button>
-              <button onClick={handleLogout} className="lobbyButton">
-                Logout
-              </button>
+              </button>              
             </div>
           </div>
         )}

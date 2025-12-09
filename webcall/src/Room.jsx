@@ -226,9 +226,9 @@ useEffect(() => {
 }, [isRunning, mode, adminId, isOwner]);
 
   useEffect(() => {
-  if (!auth.currentUser || !roomId) return;
+  if (!adminId || !roomId) return;
 
-  const messagesRef = collection(db, "users", auth.currentUser.uid, "rooms", roomId, "messages");
+  const messagesRef = collection(db, "users", adminId, "rooms", roomId, "messages");
   const q = query(messagesRef, orderBy("createdAt", "asc"));
 
   const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -240,7 +240,7 @@ useEffect(() => {
   });
 
   return () => unsubscribe();
-}, [roomId]);
+}, [adminId,roomId]);
 
  useEffect(() => {
   if (!auth.currentUser || !roomId) return;
@@ -311,25 +311,30 @@ useEffect(() => {
   };
 }, [roomId, auth.currentUser]);
 
-  useEffect(() => {
-    if (!userEmail) return;
+useEffect(() => {
+  if (!userEmail) return;
 
-    const startLocalStream = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        localVideoRef.current.srcObject = stream;
-        localStreamRef.current = stream;
+  if (!socket.connected) socket.connect();
+  socket.emit("join-room", { roomId, email: userEmail, noVideo: true });
 
-        if (!socket.connected) socket.connect();
-        socket.emit("join-room", { roomId, email: userEmail });
+  const startLocalStream = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true
+      });
 
-      } catch (err) {
-        console.error("Cannot access camera/microphone:", err);
-        alert("Cannot access camera/microphone.");
-      }
-    };
+      localVideoRef.current.srcObject = stream;
+      localStreamRef.current = stream;
 
-    startLocalStream();
+      socket.emit("has-video", { roomId, email: userEmail });
+
+    } catch (err) {
+      console.warn("No camera — joining without video");
+    }
+  };
+
+  startLocalStream();
 
     const handleUserJoined = ({ peerId }) => handleNewPeer(peerId, true);
     const handleOffer = ({ from, offer }) => handleIncomingOffer(from, offer);
@@ -432,7 +437,7 @@ useEffect(() => {
     e.preventDefault();
     if (!newMessage.trim()) return;
 
-    await addDoc(collection(db, "users", auth.currentUser.uid, "rooms", roomId, "messages"), {
+    await addDoc(collection(db, "users", adminId, "rooms", roomId, "messages"), {
       text: newMessage,
       sender: auth.currentUser?.email || "Anonymous",
       createdAt: serverTimestamp(),

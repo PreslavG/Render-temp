@@ -61,7 +61,7 @@ export default function Navbar() {
           Lobby
         </button>
       
-      <button className="navButton"
+      <button className="navButtonLogout"
           onClick={handleLogout}
           
         >
