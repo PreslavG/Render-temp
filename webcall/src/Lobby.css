@@ -63,18 +63,20 @@ html, body {
 .lobbyButton{
     background-color: rgb(0, 0, 0,0.5);
     border-radius: 20%;
-    height: 50px;
-    width: 175px;
+    height: 10vh;
+    width: 30vh;
     cursor: pointer;
     font-family: monospace;
     color: rgb(228, 239, 231);
     text-shadow: 2px 2px 20px rgb(0, 0, 0);
-    
+    bottom: 0;
+    margin-bottom: 10vh;
+    margin-top: 2vh;
+    font-size: xx-large;
 }
 
 .lobbyButton:hover{
   background-color: rgb(228, 239, 231);
-  font-size: x-large;
   color: #111;
 }
 
@@ -97,71 +99,29 @@ html, body {
   background-color: rgb(0, 0, 0,0.7); 
   display: flex;
   flex-direction: column;
-  height: 95%;  
-  padding: 20px;           
+  height: 94%;  
   box-sizing: border-box;
-  gap: 5px;
-  width: 30%;
+  width: 100%;
   position: absolute;
   right: 0;
   top: 0;
-  border: 3px solid white;
 
 }
-.buttonList1{
-  display: flex;
-  justify-content:space-between;
-  align-items: center;
-  flex-direction: column;;
-  background-color: rgb(0, 0, 0,0.7); 
-  display: flex;
-  flex-direction: column;
-  height: 95%;  
-  padding: 20px;           
-  box-sizing: border-box;
-  gap: 5px;
-  width: 30%;
-  position: absolute;
-  left: 0;
-  top: 0;
-  border: 3px solid white;
 
-}
-.buttonList2{
-  display: flex;
-  justify-content:space-between;
-  align-items: center;
-  flex-direction: column;;
-  background-color: rgb(0, 0, 0,0.7);
-  display: flex;
-  flex-direction: column;
-  height: 55%;  
-  padding: 20px;           
-  box-sizing: border-box;
-  gap: 5px;
-  width: 40%;
-  position: absolute;
-  bottom: 0;
-  border: 3px solid white;
 
+#roomsBtn:hover{
+  color:rgb(134, 153, 138);
+  cursor: pointer;
+  text-decoration:underline;
+  
 }
-.buttonList3{
-  display: flex;
-  justify-content:space-between;
-  align-items: center;
-  flex-direction: column;;
-  background-color: rgb(0, 0, 0,0.7); 
-  display: flex;
-  flex-direction: column;
-  height: 45%;  
-  padding: 20px;           
-  box-sizing: border-box;
-  gap: 5px;
-  width: 40%;
-  position: absolute;
-  top: 0;
-  border: 3px solid white;
+#friendsBtn:hover{
+  color: rgb(134, 153, 138);
+  cursor: pointer;
+  text-decoration: underline;
+  
 }
+
 
 .buttonList {
   overflow: auto; 
@@ -169,6 +129,9 @@ html, body {
 
 .buttonlistTitle{
     display: flex;
+    position: absolute;
+    top: 0;
+    font-size: 50px;
     justify-content: center;
     align-items: center;
     font-family: monospace;
@@ -181,38 +144,81 @@ html, body {
   display: flex;
   flex-direction:column;
   align-items: center;
+  justify-content: center;
   gap: 10px;
+  width: 100%;
 }
 
 .RoomsButtons{
   display: flex;
+  justify-content: center;
   flex-wrap: wrap;  
+  width: 100%;
+  font-size: x-large;
   gap: 10px;
 }
 
-.RoomsButtons > * {
-  flex: 1 1  calc(50% - 10px); 
-}
 
 
 .roomButton {
+  display: flex;
+  align-items: center;
+  flex-direction: row;
+  gap: 20px; /* smaller gap recommended */
+  width: 90%;
+  background-color: rgba(14, 14, 14, 0.5);
+  border-radius: 10%;
+  border-color: rgb(228, 239, 231);
+  cursor: pointer;
+  font-family: monospace;
+  color: rgb(228, 239, 231);
+  text-shadow: 2px 2px 20px rgb(0, 0, 0);
+  transition: background 0.25s;
+  font-size: xx-large;
+  height: 7vh;
+}
+
+/* ⭐ make all elements inside equal width */
+.roomButton > * {
+  flex: 1;
+  min-width: 0;
+}
+
+
+
+
+.roomElements{
  display: flex;
  justify-content: space-between;
  align-items: center;
  flex-direction: row;
- height: 70px;
- width: 250px;
+ margin-top: 10%;
+ gap: 20px;
+ width: 90%;
  background-color: rgba(14, 14, 14, 0.5);
  border-radius: 10%;
+ border-radius: 80%;
+ border-bottom-left-radius: 0;
+ border-bottom-right-radius: 0;
+ border: 2px solid;
  border-color: rgb(228, 239, 231);
- cursor: pointer;
  font-family: monospace;
  color: rgb(228, 239, 231);
  text-shadow: 2px 2px 20px rgb(0, 0, 0);
  transition: background 0.25s;
- font-size: x-large;
- margin-top: 0;
+ padding-top: 10px;
  
+
+}
+.roomElements h1{
+  margin-left: 17vh;
+  margin-right: 17vh;
+
+ }
+
+ .roomElements > * {
+  flex: 1;
+  min-width: 0;
 }
 
 .roomButton:hover {
@@ -221,7 +227,24 @@ html, body {
 }
 
 .roomPplcount{
-  font-size: x-large;
+  font-size: xx-large;
+  width: 100%;
+  
+}
+
+.imageShower {
+  display: flex;        
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
+
+#ownerPic {
+  max-width: 15%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 100%;   /* makes it circular */
 }
 
 
@@ -284,26 +307,9 @@ html, body {
   margin-bottom: 0px;
 }
 
-.tabButtons {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 1rem;
-  gap: 10px;
-}
 
-.tabButtons button {
-  padding: 10px 20px;
-  border-radius: 10px;
-  border: none;
-  background: #eee;
-  cursor: pointer;
-  transition: 0.2s;
-}
 
-.tabButtons .activeTab {
-  background: #007bff;
-  color: white;
-}
+
 
 .usersList {
   padding: 1rem;
@@ -349,21 +355,7 @@ html, body {
   text-shadow: 2px 2px 20px rgb(0, 0, 0);
 }
 
-.friendList{
-  display: flex;
-  justify-content: center;
-  align-items: end;
-  font-size: 1.2rem;
-  color: rgb(228, 239, 231);
-  text-shadow: 2px 2px 20px rgb(0, 0, 0);
-  margin-left: 20px;
-  cursor: pointer;
-  border-radius: 100%;
-  background-color: #007bff;
-  height: 100px;
-  width: 100px;
-  
-}
+
 
 .UserFriends{
   display: flex;
@@ -400,6 +392,7 @@ html, body {
 }
 
 .activeUsersList{
+  
   list-style: none;
   padding: 0;
   margin: 0;

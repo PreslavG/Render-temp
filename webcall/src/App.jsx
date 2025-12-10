@@ -11,9 +11,10 @@ import Room from "./Room";
 import Breakroom from "./Breakroom";
 import Account from "./Account";
 import Files from "./Files";
+import Friends from "./Friends";
 
 import Layout from "./LayoutLogoNavbar";
-import LayoutLogo from "./LayoutLogo";   // ← ADD THIS
+import LayoutLogo from "./LayoutLogo";   
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -102,6 +103,11 @@ export default function App() {
         <Route
           path="/files"
           element={<Layout>{user ? <Files /> : <Navigate to="/login" />}</Layout>}
+        />
+
+        <Route
+          path="/Friends"
+          element={<Layout>{user ? <Friends /> : <Navigate to="/login" />}</Layout>}
         />
 
         <Route
