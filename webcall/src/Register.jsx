@@ -1,15 +1,33 @@
-import { useState } from "react";
+import { use, useEffect, useState } from "react";
 import { auth, db } from "./scripts/firebase"; 
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore"; 
 import { useNavigate } from "react-router-dom";
+import { ref, getDownloadURL,getStorage } from "firebase/storage";
+
 import "./Register.css";
 
 export default function RegistrationForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [defaultImage, setdefaultImage] = useState("");
   const navigate = useNavigate();
+
+  const storage = getStorage();
+
+const imageRef = ref(storage, "default-avatar.jpg");
+
+getDownloadURL(imageRef)
+  .then((url) => {
+    console.log("Image URL:", url);
+    setdefaultImage(url);
+  })
+  .catch((error) => {
+    console.error("Error getting image URL:", error);
+  });
+  
+
 
   const handleSubmit = async (e) => {
     e.preventDefault(); 
@@ -29,6 +47,7 @@ export default function RegistrationForm() {
         name: name,
         email: user.email,
         createdAt: new Date(),
+        profilePic: defaultImage,
       });
 
       alert(`Registered successfully! Welcome, ${name}`);

@@ -12,7 +12,12 @@ export default function Friends() {
   const [selectedRoomId, setSelectedRoomId] = useState("");
   const [isRoomListOpen, setIsRoomListOpen] = useState(false);
   const [rooms, setRooms] = useState([]);
-    const [profilePic,setProfilePic] = useState(null);
+  const [profilePic,setProfilePic] = useState(null);
+  const [isFriendRequestsOpen, setIsFriendRequestsOpen] = useState(null);
+  const [isRoomInviteOpen, setIsRoomInviteOpen] = useState(null);
+  const [isFriendsOpen, setIsFriendsOpen] = useState(true);
+  const [activeTab, setActiveTab] = useState("friends");
+
 
 
 
@@ -21,6 +26,7 @@ export default function Friends() {
 
   const [text, setText] = useState("");
   const user = auth.currentUser;
+
 
  useEffect(() => {
   if (!user) return;
@@ -210,35 +216,73 @@ export default function Friends() {
           };
 
   return (
-    
            <div className="friendsPage">
             <div className="Friends">
-              <h1 className="Title">Friends:</h1>
-              <div className="UserFriends">
-                {friends.length === 0 && <p>No friends yet.</p>}
-                {friends.map((friend) => (
-                  <button
-                    key={friend.id}
-                    className="friendList"
-                    onClick={() => {
-                        setSelectedFriend(friend);
-                        setIsRoomListOpen(true);
-                    }}
-                    >
-                    <div className="friendItem">
-                        
-                        <img
-                        src={friend.profilePic || "./images/default-avatar.jpg"} 
-                        alt={friend.name || friend.friendEmail}
-                        id="friendPic"
-                        />
-                       
-                    </div>
-                    <span id="friendName">{friend.name || friend.friendEmail}</span>
-                    </button>
-                ))}
-              </div>
+              <div className="friendsElements">
+              <h1
+                className={`tab ${activeTab === "friends" ? "activeTab" : ""}`}
+                onClick={() => setActiveTab("friends")}
+              >
+                Friends
+              </h1>
 
+              <h1
+                className={`tab ${activeTab === "requests" ? "activeTab" : ""}`}
+                onClick={() => setActiveTab("requests")}
+              >
+                Friend Requests
+              </h1>
+
+              <h1
+                className={`tab ${activeTab === "invites" ? "activeTab" : ""}`}
+                onClick={() => setActiveTab("invites")}
+              >
+                Room Invites
+              </h1>
+              </div>
+                    {activeTab === "friends" && (
+                   <div className="frElementSecond">
+                    <div className="UserFriends">
+                      <div className="FriendListsGrid">
+                      {friends.length === 0 && <p className="noPendMessages">No friends yet.</p>}
+                      {friends.map((friend) => (
+                        <button
+                          key={friend.id}
+                          className="friendList"
+                          onClick={() => {
+                              setSelectedFriend(friend);
+                              setIsRoomListOpen(true);
+                          }}
+                          >
+                          <div className="friendItem">
+                              
+                              <img
+                              src={friend.profilePic || "./images/default-avatar.jpg"} 
+                              alt={friend.name || friend.friendEmail}
+                              id="friendPic"
+                              />
+                            
+                          </div>
+                          <span id="friendName">{friend.name || friend.friendEmail}</span>
+                          </button>
+                          
+                          
+                      ))}
+                      </div>
+                      
+                     </div>
+                      <button className="AddFriends" onClick={() => setIsFriendsPopupOpen(true)}>
+                        Add Friend +
+                      </button>
+                </div>
+                
+                    )}
+
+
+              
+           
+             {activeTab === "requests" && (
+                <div className="frElementSecond">
               <h1 className="Title">Friend Requests:</h1>
               <div className="FriendRequests">
                 {friendRequests.length === 0 && <p className="noPendMessages">No pending requests.</p>}
@@ -254,7 +298,10 @@ export default function Friends() {
                   </div>
                 ))}
               </div>
-
+              </div>
+             )}
+             {activeTab === "invites" && (
+                <div className="frElementSecond">
               <h1 className="Title">Room Invites:</h1>
               <div className="RoomInvites">
                 {roomInvites.length === 0 && <p className="noPendMessages">No pending room invites.</p>}
@@ -270,13 +317,13 @@ export default function Friends() {
                   </div>
                 ))}
               </div>
-                <button className="AddFriends" onClick={() => setIsFriendsPopupOpen(true)}>
-            +
-          </button>
+                
+          </div>
+             )}
+
           {isFriendsPopupOpen && (
           <div className="popup-overlay">
             <div className="popup">
-              <h3>Your ID: {user.uid}</h3>
               <h3>Send Friend Request</h3>
               <input
                 type="text"
