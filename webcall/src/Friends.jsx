@@ -214,6 +214,36 @@ export default function Friends() {
               console.error("Error sending invite:", error);
             }
           };
+          const acceptRoomInvite = async (invite) => {
+                try {
+                  await setDoc(doc(db, "users", user.uid, "rooms", invite.roomId), {
+                    name: invite.roomName,
+                    invitedBy: invite.fromEmail,
+                    adminId: invite.fromId,        // 🟢 КОЙ Е OWNER-а
+                    capacity: 5,                   // ако имаш capacity
+                    createdAt: new Date(),
+                  });
+                  await deleteDoc(doc(db, "users", user.uid, "roomInvites", invite.id));
+                } catch (e) {
+                  console.error("Error accepting room invite:", e);
+                }
+              };
+          
+              const rejectRoomInvite = async (invite) => {
+                try {
+                  await deleteDoc(doc(db, "users", user.uid, "roomInvites", invite.id));
+                } catch (e) {
+                  console.error("Error rejecting room invite:", e);
+                }
+              };
+              useEffect(() => {
+      if (!user) return;
+      const invitesRef = collection(db, "users", user.uid, "roomInvites");
+      const unsubscribe = onSnapshot(invitesRef, (snapshot) => {
+        setRoomInvites(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+      });
+      return unsubscribe;
+    }, [user]);
 
   return (
            <div className="friendsPage">

@@ -166,51 +166,7 @@
     
 
         // 🔹 Send room invite
-    const sendRoomInvite = async () => {
-      if (!selectedFriend || !selectedRoomId) return;
-
-      try {
-        const roomRef = doc(db, "users", user.uid, "rooms", selectedRoomId);
-        const roomSnap = await getDoc(roomRef);
-
-        if (!roomSnap.exists()) {
-          alert("Room not found!");
-          return;
-        }
-
-        const roomData = roomSnap.data();
-
-        // find target user by email
-        const usersRef = collection(db, "users");
-        const q = query(usersRef, where("email", "==", selectedFriend.friendEmail));
-        const querySnapshot = await getDocs(q);
-
-        if (querySnapshot.empty) {
-          alert("User not found.");
-          return;
-        }
-
-        const targetUserDoc = querySnapshot.docs[0];
-        const targetUserId = targetUserDoc.id;
-
-        // create invite in friend's Firestore path
-        await addDoc(collection(db, "users", targetUserId, "roomInvites"), {
-          fromId: user.uid,
-          fromEmail: user.email,
-          roomId: selectedRoomId,
-          roomName: roomData.name,
-          status: "pending",
-          createdAt: new Date(),
-        });
-
-        alert(`Invite sent to ${selectedFriend.friendEmail} for room ${roomData.name}`);
-        setIsRoomListOpen(false);
-        setSelectedRoomId("");
-        setSelectedFriend(null);
-      } catch (error) {
-        console.error("Error sending invite:", error);
-      }
-    };
+    
 
     const setUrl = async () => {
     try {
@@ -233,30 +189,6 @@
   useEffect(() => {
     setUrl();
   });
-
-    // 🔹 Accept / Reject Room Invite
-    const acceptRoomInvite = async (invite) => {
-      try {
-        await setDoc(doc(db, "users", user.uid, "rooms", invite.roomId), {
-          name: invite.roomName,
-          invitedBy: invite.fromEmail,
-          adminId: invite.fromId,        // 🟢 КОЙ Е OWNER-а
-          capacity: 5,                   // ако имаш capacity
-          createdAt: new Date(),
-        });
-        await deleteDoc(doc(db, "users", user.uid, "roomInvites", invite.id));
-      } catch (e) {
-        console.error("Error accepting room invite:", e);
-      }
-    };
-
-    const rejectRoomInvite = async (invite) => {
-      try {
-        await deleteDoc(doc(db, "users", user.uid, "roomInvites", invite.id));
-      } catch (e) {
-        console.error("Error rejecting room invite:", e);
-      }
-    };
 
     const getActiveUsers = (users) => {
           if (!users) return [];

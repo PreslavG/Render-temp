@@ -16,7 +16,7 @@ html, body {
   border-radius: 0%;
   overflow: hidden;           
   z-index: 1;     
-  background-image: url("./images/lobby_background.jpg");
+  background-image: url("./images/test.jpg");
   content: "";
   inset: 0;  
   background-size: cover;
@@ -365,11 +365,7 @@ html, body {
   gap: 10px;
 }
 
-.noPendMessages{
-  color: rgb(255, 255, 255);
-  align-items: center;
-  text-align: center;
-}
+
 
 .FriendRequest{
    display: flex;
