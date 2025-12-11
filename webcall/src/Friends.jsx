@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { auth, db } from "./scripts/firebase";
-import { collection, onSnapshot, addDoc, deleteDoc, query, where, getDocs, getDoc, doc} from "firebase/firestore";
+import { collection, onSnapshot, addDoc, deleteDoc, query, where, getDocs,setDoc, getDoc, doc} from "firebase/firestore";
 import "./Friends.css"
 
 
