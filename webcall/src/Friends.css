@@ -84,13 +84,17 @@
 
 .AddFriends{
     position: absolute;
+    align-items: center;
+    justify-content: center;
     bottom: 2vh;     
     right: 2vh;
     display: flex;
     background-color: white;
     font-family: monospace;
     border-radius: 20px;
-    height: 4vh;
+    height: 10vh;
+    width: 20vh;
+    font-size: large;
     cursor: pointer;
 }
 

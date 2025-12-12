@@ -70,6 +70,7 @@ getDownloadURL(imageRef)
 
   return (
     <div className="Page">
+      <div className="registerBox">
       <div className="registerReturn">
         <form className="formData" onSubmit={handleSubmit}>
           <h2 className="registerTitle">Register</h2>
@@ -114,6 +115,7 @@ getDownloadURL(imageRef)
         <button type="button" onClick={goToLogin} className="registerButton">
           Already have an account?
         </button>
+      </div>
       </div>
     </div>
   );

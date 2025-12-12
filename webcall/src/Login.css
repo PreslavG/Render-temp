@@ -13,8 +13,9 @@
 .Page::before{
   content: "";
   position: absolute;
-  inset: 0;  
+  inset: 0; 
   background: url("../public/images/login-page.jpg");
+  filter: blur(7px);
   background-position: center;
   background-size: cover;
   overflow-x: hidden;
@@ -60,7 +61,6 @@
   box-shadow: 0 0 5px rgba(102, 126, 234, 0.5);
 }
 
-/* Buttons */
 .loginButton {
   padding: 0.8rem 1rem;
   border-radius: 0.75rem;
@@ -129,8 +129,9 @@
 }
 
 #LogoLogin{
-  width: 60%;
-  height: 500px;
+  width: 70%;
+  height: 80%;
+  padding: 10px;
 }
 
 

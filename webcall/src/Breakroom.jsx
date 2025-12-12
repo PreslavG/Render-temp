@@ -375,8 +375,7 @@ useEffect(() => {
       </div>
 
       <div className="controls">
-        <button onClick={typeshit}></button>
-        <button onClick={() =>(leave(), deleteActiveUser())}>Go to Lobby</button>
+        <button onClick={() =>(leave(), deleteActiveUser())}>Lobby</button>
         <button onClick={() => (addActiveUser(),deleteActiveUser(),goBack())}>Go back</button>
         <button onClick={toggleVideo}>{isVideoOff ? "Start Video" : "Stop Video"}</button>
         <button onClick={toggleMute}>{isMuted ? "Unmute" : "Mute"}</button>
@@ -418,7 +417,6 @@ useEffect(() => {
         ) : (
           <div className="narrowContent">
             <img src="/images/chatPng.png" className="chatPng1" onClick={() => setWide(!wide)} />
-            <img src="/images/timer.png" className="chatPng" onClick={() => setShowTimerPopup(true)} />
             <img src="/images/settings.png" className="chatPng"/>
           </div>
         )}

@@ -68,11 +68,9 @@ export default function App() {
       <Routes>
         <Route
           path="/login"
-          element={
-            <LayoutLogo>
-                    {!user ? <Login /> : <Navigate to="/lobby" />}
-            </LayoutLogo>
-            }
+          element={!user ? <Login /> : <Navigate to="/lobby" />}
+                    
+            
         />
 
         <Route

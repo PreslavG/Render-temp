@@ -79,32 +79,7 @@
       return () => unsubscribe();
     }, [user]);
 
-    useEffect(() => {
-      if (!user) return;
-      const friendsRef = collection(db, "users", user.uid, "friends");
-      const unsubscribe = onSnapshot(friendsRef, (snapshot) => {
-        setFriends(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
-      });
-      return unsubscribe;
-    }, [user]);
-
-    useEffect(() => {
-      if (!user) return;
-      const requestsRef = collection(db, "users", user.uid, "friendRequests");
-      const unsubscribe = onSnapshot(requestsRef, (snapshot) => {
-        setFriendRequests(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
-      });
-      return unsubscribe;
-    }, [user]);
-
-    useEffect(() => {
-      if (!user) return;
-      const invitesRef = collection(db, "users", user.uid, "roomInvites");
-      const unsubscribe = onSnapshot(invitesRef, (snapshot) => {
-        setRoomInvites(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
-      });
-      return unsubscribe;
-    }, [user]);
+    
 
           useEffect(() => {
             if (!selectedRoomId) return;
@@ -255,6 +230,7 @@
                 <h1>Users</h1>
               </span>
               <div className="RoomsButtons">
+              {rooms.length === 0 && <p className="NoRooms">No rooms available. Create one!</p>}
               {rooms.map((room) => (
                 <button
                   key={room.id}

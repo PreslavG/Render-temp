@@ -66,7 +66,6 @@ export default function FileManager() {
 
   return (
     <div className="categoriesAndFiles">
-      <h2 className="FMTitle"> File Manager</h2>
      <div className="categorySelect">
       <div className="category-list">
         <h1>Categories List:</h1>
