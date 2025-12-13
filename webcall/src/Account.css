@@ -68,7 +68,7 @@
 .AccountPage{
     width: 100%;
     height: 100vh;
-    background: url("/images/account_background.jpg");
+    background: url('../public/images/account_background.jpg');
     background-repeat: no-repeat;
     background-size: cover;
 }
