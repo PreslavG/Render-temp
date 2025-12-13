@@ -30,6 +30,8 @@ export default function Breakroom() {
   const [isRunning, setIsRunning] = useState(false);
   const [BreakTime, setBreakTime] = useState();
   const [StudyTime, setStudyTime]= useState();
+  const [adminId, setAdminId] = useState(null);
+
 
 
   // Video refs
@@ -47,7 +49,17 @@ export default function Breakroom() {
   const [newMessage, setNewMessage] = useState("");
   const [wide, setWide] = useState(false);
 
-  /* ------------------------ AUTH WATCH ------------------------ */
+ useEffect(() => {
+  if (!roomId || !auth.currentUser) return;
+  const roomRef = doc(db, "users", auth.currentUser.uid, "rooms", roomId);
+  getDoc(roomRef).then(snap => {
+    if (!snap.exists()) {
+      return;
+    }
+    setAdminId(snap.data().adminId);
+  }).catch(err => console.error("failed to read adminId:", err));
+}, [roomId]);
+
   useEffect(() => {
     return auth.onAuthStateChanged((user) => {
       if (!user) navigate("/login");
@@ -55,11 +67,10 @@ export default function Breakroom() {
     });
   }, []);
 
-  /* ------------------------ CHAT LISTENER ------------------------ */
   useEffect(() => {
-    if (!userEmail || !roomId) return;
+    if (!adminId || !roomId) return;
 
-    const msgRef = collection(db, "rooms", roomId, "messages");
+    const msgRef = collection(db,"users", adminId, "rooms", roomId,"breakroom",roomId+"breakroom", "messages");
     const q = query(msgRef, orderBy("createdAt", "asc"));
 
     const unsub = onSnapshot(q, (snap) => {
@@ -68,15 +79,14 @@ export default function Breakroom() {
     });
 
     return () => unsub();
-  }, [roomId, userEmail]);
+  }, [roomId, adminId]);
 
 
-  /* ------------------------ SEND MESSAGE ------------------------ */
   const sendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
 
-    await addDoc(collection(db, "rooms", roomId, "messages"), {
+    await addDoc(collection(db,"users", adminId, "rooms", roomId,"breakroom",roomId+"breakroom", "messages"), {
       text: newMessage,
       sender: userEmail,
       createdAt: serverTimestamp(),
@@ -84,11 +94,7 @@ export default function Breakroom() {
 
     setNewMessage("");
   };
-  
-  async function typeshit() {
-    console.log("Study time is :", StudyTime);
-    console.log("Break time is: ", BreakTime);
-  }
+
 
   useEffect(() => {
     if (remainingSeconds===0) return;
@@ -135,7 +141,6 @@ useEffect(() => {
         updateTimerInDB(prev - 1, mode, true);
         return prev - 1;
       } else {
-        // time is up, switch mode
         const newMode = mode === "study" ? "break" : "study";
         const newSeconds = newMode === "study" ? StudyTime : BreakTime;
 
@@ -163,7 +168,7 @@ const switchMode = () => {
 }
 
 
-  /* ------------------------ WEBRTC SETUP ------------------------ */
+  /*WEBRTC*/
   useEffect(() => {
     if (!userEmail || !localVideoRef.current) return;
 
@@ -294,7 +299,6 @@ async function deleteActiveUser() {
 
   await deleteDoc(doc(db,"users",auth.currentUser.uid,"rooms",roomId,"breakroom", roomId+"breakroom","activeUsers", auth.currentUser.uid));
   
-  
 }
 
 async function addActiveUser() {
@@ -360,6 +364,23 @@ useEffect(() => {
     console.error("Error updating timer:", error);
   }
 };
+
+ useEffect(() => {
+  if (!adminId || !roomId) return;
+
+  const messagesRef = collection(db, "users", adminId, "rooms", roomId,"breakroom",roomId+"breakroom", "messages");
+  const q = query(messagesRef, orderBy("createdAt", "asc"));
+
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    const msgs = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    setMessages(msgs);
+  });
+
+  return () => unsubscribe();
+}, [adminId,roomId]);
 
   
   /* ------------------------ UI ------------------------ */

@@ -203,7 +203,6 @@ const switchMode = () => {
 useEffect(() => {
   if (!isRunning) return;
   if (!adminId) {
-    console.warn("Timer running locally but adminId not ready — waiting to sync");
   }
 
   const interval = setInterval(() => {
@@ -454,7 +453,6 @@ useEffect(() => {
 };
 
 async function getAndFormatTime() {
-  // Example: find a user with a specific email
   const timerRef = doc(db, "users", auth.currentUser.uid, "rooms", roomId );
   const timerSnap = await getDoc(timerRef);
 
@@ -568,8 +566,8 @@ async function getAndFormatTime() {
         value={studySession}
         onChange={(e) => {
           let value = Number(e.target.value);
-          if (value > 120) value = 120;      // max 2 hours
-          if (value < 1) value = 1;          // min 1 minute
+          if (value > 120) value = 120;      
+          if (value < 1) value = 1;         
           setStudySession(value);
         }}
       />
