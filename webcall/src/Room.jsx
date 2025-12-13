@@ -136,7 +136,7 @@ useEffect(() => {
   if (mainCount + breakCount === 0) { 
     setIsRunning(false);
     updateTimerInDB(-1, mode, false);
-  } else if (remainingSeconds >= 0) {
+  }   else if (remainingSeconds >= 0) {
     setIsRunning(true); 
   }
 }
@@ -273,6 +273,24 @@ useEffect(() => {
 
   return () => clearInterval(interval);
 }, [roomId, auth.currentUser]);
+
+useEffect(() => {
+  return async () => {
+    if (!roomOwnerId.current || !auth.currentUser) return;
+
+    await deleteDoc(
+      doc(
+        db,
+        "users",
+        roomOwnerId.current,
+        "rooms",
+        roomId,
+        "activeUsers",
+        auth.currentUser.uid
+      )
+    );
+  };
+}, []);
 
 
    useEffect(() => {
@@ -458,8 +476,8 @@ useEffect(() => {
     peerConnections.current = {};
     localStreamRef.current?.getTracks().forEach(track => track.stop());
     socket.emit("leave-room", { roomId });
-   if (roomOwnerId) {
-    await deleteDoc(doc(db, "users", auth.currentUser.uid, "rooms", roomId, "activeUsers", auth.currentUser.uid));
+   if (adminId) {
+    await deleteDoc(doc(db, "users", adminId, "rooms", roomId, "activeUsers", auth.currentUser.uid));
    }
     navigate("/lobby");
   };

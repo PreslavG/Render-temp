@@ -10,9 +10,8 @@
     deleteDoc,
     getDocs,
     setDoc,
-    query,
-    where,
     getDoc,
+    serverTimestamp,
   } from "firebase/firestore";
 
   import "./Lobby.css";
@@ -49,25 +48,50 @@
     };
 
     const joinRoom = async (room) => {
-    const ownerId = room.adminId;
-    const activeUsersRef = collection(db, "users", ownerId, "rooms", room.id, "activeUsers");
-    const snapshot = await getDocs(activeUsersRef);
+            const ownerId = room.adminId;
 
-    const totalActive = snapshot.size;
+            const mainRef = collection(db, "users", ownerId, "rooms", room.id, "activeUsers");
+            const breakRef = collection(db, "users", ownerId, "rooms", room.id, "breakroom", room.id + "breakroom", "activeUsers");
 
-    if (totalActive >= room.capacity) {
-      alert("Room is full!");
-      return;
-    }
+            const [mainSnap, breakSnap] = await Promise.all([getDocs(mainRef), getDocs(breakRef)]);
 
-    await setDoc(doc(db, "users", ownerId,"rooms", room.id, "activeUsers", user.uid ), {
-      uid: user.uid,
-      email: user.email,
-      name: user.displayName,
-    });
+            const allUsers = [
+              ...mainSnap.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() })),
+              ...breakSnap.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }))
+            ];
 
-    navigate(`/room/${room.id}`, { state: { role: room.adminId === user.uid ? "admin" : "user" },ownerId: ownerId,});
-  };
+            const ACTIVE_THRESHOLD = 15000; 
+            const now = Date.now();
+
+            const active = allUsers.filter(u => {
+              if (!u.lastSeen) return true; 
+              const lastSeenMs = u.lastSeen.toDate ? u.lastSeen.toDate().getTime() : new Date(u.lastSeen).getTime();
+              return now - lastSeenMs < ACTIVE_THRESHOLD;
+            });
+
+            if (active.length >= room.capacity) {
+              alert("Room is full!");
+              return;
+            }
+
+            
+            await setDoc(
+              doc(db, "users", ownerId, "rooms", room.id, "activeUsers", user.uid),
+              {
+                uid: user.uid,
+                email: user.email,
+                name: user.displayName,
+                lastSeen: serverTimestamp(),
+              },
+              { merge: true }
+            );
+
+  navigate(`/room/${room.id}`, {
+    state: { role: room.adminId === user.uid ? "admin" : "user" },
+    ownerId: ownerId,
+  });
+};
+
 
     useEffect(() => {
       if (!user) return;
