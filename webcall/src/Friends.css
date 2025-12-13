@@ -3,7 +3,7 @@
     align-items: center;
     justify-content: center;
     height: 100vh;
-    background-image: url(../images/friends.jpg);
+    background-image: url(/images/friends.jpg);
     background-size: cover;
     background-repeat: no-repeat;
 }
