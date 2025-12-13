@@ -13,9 +13,7 @@ export default function Friends() {
   const [isRoomListOpen, setIsRoomListOpen] = useState(false);
   const [rooms, setRooms] = useState([]);
   const [profilePic,setProfilePic] = useState(null);
-  const [isFriendRequestsOpen, setIsFriendRequestsOpen] = useState(null);
-  const [isRoomInviteOpen, setIsRoomInviteOpen] = useState(null);
-  const [isFriendsOpen, setIsFriendsOpen] = useState(true);
+
   const [activeTab, setActiveTab] = useState("friends");
 
 
@@ -313,7 +311,6 @@ export default function Friends() {
            
              {activeTab === "requests" && (
                 <div className="frElementSecond">
-              <h1 className="Title">Friend Requests:</h1>
               <div className="FriendRequests">
                 {friendRequests.length === 0 && <p className="noPendMessages">No pending requests.</p>}
                 {friendRequests.map((req) => (
@@ -332,7 +329,6 @@ export default function Friends() {
              )}
              {activeTab === "invites" && (
                 <div className="frElementSecond">
-              <h1 className="Title">Room Invites:</h1>
               <div className="RoomInvites">
                 {roomInvites.length === 0 && <p className="noPendMessages">No pending room invites.</p>}
                 {roomInvites.map((invite) => (

@@ -132,3 +132,11 @@
 }
 
 
+.labels{
+  display: flex; 
+  justify-content: space-evenly;
+  align-items: center;
+  font-family: monospace;
+  font-size: 20px;
+}
+

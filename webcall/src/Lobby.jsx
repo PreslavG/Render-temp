@@ -24,6 +24,7 @@
     const [roomFullPopup, setRoomFullPopup] = useState(false);
     const [activeUsers, setActiveUsers] = useState({});
     const [activeUsersList, setActiveUsersList] = useState({});
+    const [ownerPics, setOwnerPics] = useState({});
 
     const [profilePic,setProfilePic] = useState(null);
 
@@ -31,7 +32,6 @@
     const [rooms, setRooms] = useState([]);
     const [activeTab, setActiveTab] = useState("rooms");
 
-    const [selectedFriend, setSelectedFriend] = useState(null);
     const [selectedRoomId, setSelectedRoomId] = useState("");
 
     const ACTIVE_THRESHOLD = 5000;
@@ -160,12 +160,28 @@
       }
     };
 
-
-   
+    const getOwnerProfilePic = async (ownerId) => {
+      try {
+        const docRef = doc(db, "users", ownerId);
+        const snap = await getDoc(docRef);
+        if (snap.exists()) return snap.data().profilePic || null;
+        return null;
+      } catch (err) {
+        console.error("Error fetching owner profilePic:", err);
+        return null;
+      }
+    };
     
+    useEffect(() => {
+      rooms.forEach(async (room) => {
+        if (!room.adminId) return;
 
-        // 🔹 Send room invite
-    
+        if (!ownerPics[room.adminId]) {
+          const pic = await getOwnerProfilePic(room.adminId);
+          setOwnerPics(prev => ({ ...prev, [room.adminId]: pic }));
+        }
+      });
+    }, [rooms]);
 
     const setUrl = async () => {
     try {
@@ -264,11 +280,12 @@
                 <h3>{room.name} 
                   </h3>
                 <div className="imageShower">
-                  {room.adminId === user.uid && <img
-                          src={profilePic}
-                          id="ownerPic"          
-                        />}
-                 </div>
+                  <img
+                    src={room.adminId === user.uid ? profilePic : ownerPics[room.adminId]}
+                    id="ownerPic"
+                    alt="Profile"
+                  />
+                </div>
                     <h1 className="roomPplcount">
                         {activeUsers[room.id]}/{room.capacity}
                     </h1>
@@ -277,8 +294,6 @@
                                 <li key={user.email}>{user.name}</li>
                               ))}
                             </ul>
-                          
-                          
                   </button>
                   ))}
               </div>

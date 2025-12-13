@@ -75,7 +75,7 @@ getDownloadURL(imageRef)
         <form className="formData" onSubmit={handleSubmit}>
           <h2 className="registerTitle">Register</h2>
 
-          <div>
+          <div className="labels">
             <label htmlFor="username">Name:</label>
             <input
               type="text"
@@ -86,7 +86,7 @@ getDownloadURL(imageRef)
             />
           </div>
 
-          <div>
+          <div className="labels">
             <label htmlFor="email">Email:</label>
             <input
               type="email"
@@ -97,7 +97,7 @@ getDownloadURL(imageRef)
             />
           </div>
 
-          <div>
+          <div className="labels"> 
             <label htmlFor="password">Password:</label>
             <input
               type="password"

@@ -21,6 +21,7 @@
     height: 15vh;
     border-radius: 50%;
     cursor: pointer;
+    border: 1px solid black;
     
 }
 
@@ -51,6 +52,11 @@
   padding: 10px;
   cursor: pointer;
 }
+
+.friendList:hover {
+    background-color: rgba(200, 200, 200, 0.5);
+}
+
 .friendsElements{
     display: flex;
     flex-direction: row;

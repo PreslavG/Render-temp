@@ -1,13 +1,15 @@
 @import url('https://fonts.cdnfonts.com/css/cartoon-free');
 
 .Page{
+  position: relative;
   display: flex;
   height: 100%;
   width: 100%;
   background-size: cover;
   align-items: center;
   justify-content: center;
-  overflow-x: hidden;
+  overflow: hidden;
+
 }
 
 .Page::before{
@@ -16,6 +18,7 @@
   inset: 0; 
   background: url("../public/images/login-page.jpg");
   filter: blur(7px);
+  transform: scale(1.1); 
   background-position: center;
   background-size: cover;
   overflow-x: hidden;

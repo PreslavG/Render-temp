@@ -16,7 +16,7 @@ html, body {
   border-radius: 0%;
   overflow: hidden;           
   z-index: 1;     
-  background: url(/images/account_background.jpg);
+  background: url(/images/lobby_background.jpg);
   content: "";
   inset: 0;  
   background-size: cover;
@@ -240,7 +240,7 @@ html, body {
 
 
 #ownerPic {
-  max-width: 15%;
+  width: 7vh;
   height: 100%;
   object-fit: cover;
   border-radius: 100%;   /* makes it circular */

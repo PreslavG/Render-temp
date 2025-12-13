@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import socket from "./scripts/socket";
 import { db, auth } from "./scripts/firebase";
 import { onAuthStateChanged } from "firebase/auth";
@@ -15,10 +15,8 @@ import {
   onSnapshot,
   deleteDoc,
   setDoc,
-  where,
 } from "firebase/firestore";
 import "./Room.css";
-import { get, set } from "firebase/database";
 
 export default function Room() {
   const sound = new Audio("/sounds/end.mp3");
@@ -168,7 +166,6 @@ useEffect(() => {
 
   const updateTimerInDB = async (remainingSeconds, mode, isRunning) => {
   if (!adminId) {
-    // nothing to write yet — adminId not known
     console.warn("updateTimerInDB: adminId not available yet");
     return;
   }
@@ -328,14 +325,6 @@ useEffect(() => {
 }, [adminId, roomId, isOwner, mode]);
 
 
-
-
-
-
-
-
-   
-
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (!user) navigate("/login");
@@ -375,20 +364,22 @@ useEffect(() => {
   if (!userEmail) return;
 
   if (!socket.connected) socket.connect();
-  socket.emit("join-room", { roomId, email: userEmail, noVideo: true });
+
+  socket.emit("join-room", {
+    roomId,
+    email: userEmail,
+    userId: auth.currentUser.uid
+  });
 
   const startLocalStream = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
-        audio: true
+        audio: true,
       });
 
       localVideoRef.current.srcObject = stream;
       localStreamRef.current = stream;
-
-      socket.emit("has-video", { roomId, email: userEmail });
-
     } catch (err) {
       console.warn("No camera — joining without video");
     }
@@ -396,31 +387,46 @@ useEffect(() => {
 
   startLocalStream();
 
-    const handleUserJoined = ({ peerId }) => handleNewPeer(peerId, true);
-    const handleOffer = ({ from, offer }) => handleIncomingOffer(from, offer);
-    const handleAnswer = ({ from, answer }) => handleIncomingAnswer(from, answer);
-    const handleIce = ({ from, candidate }) => peerConnections.current[from]?.addIceCandidate(candidate);
-    const handleUserLeft = ({ peerId }) => removePeer(peerId);
+  const handleExistingUsers = (users) => {
+    users.forEach(peerId => {
+      if (peerId === socket.id) return;
+      handleNewPeer(peerId, true); 
+    });
+  };
 
-    socket.on("user-joined", handleUserJoined);
-    socket.on("offer", handleOffer);
-    socket.on("answer", handleAnswer);
-    socket.on("ice-candidate", handleIce);
-    socket.on("user-left", handleUserLeft);
+  const handleUserJoined = ({ peerId }) => {
+    handleNewPeer(peerId, false);
+  };
 
-    return () => {
-      Object.values(peerConnections.current).forEach(pc => pc.close());
-      peerConnections.current = {};
-      localStreamRef.current?.getTracks().forEach(track => track.stop());
-      socket.emit("leave-room", { roomId });
+  const handleOffer = ({ from, offer }) =>
+    handleIncomingOffer(from, offer);
 
-      socket.off("user-joined", handleUserJoined);
-      socket.off("offer", handleOffer);
-      socket.off("answer", handleAnswer);
-      socket.off("ice-candidate", handleIce);
-      socket.off("user-left", handleUserLeft);
-    };
-  }, [roomId, userEmail]);
+  const handleAnswer = ({ from, answer }) =>
+    handleIncomingAnswer(from, answer);
+
+  const handleIce = ({ from, candidate }) =>
+    peerConnections.current[from]?.addIceCandidate(candidate);
+
+  const handleUserLeft = ({ peerId }) =>
+    removePeer(peerId);
+
+  socket.on("existing-users", handleExistingUsers);
+  socket.on("user-joined", handleUserJoined);
+  socket.on("offer", handleOffer);
+  socket.on("answer", handleAnswer);
+  socket.on("ice-candidate", handleIce);
+  socket.on("user-left", handleUserLeft);
+
+  return () => {
+    socket.off("existing-users", handleExistingUsers);
+    socket.off("user-joined", handleUserJoined);
+    socket.off("offer", handleOffer);
+    socket.off("answer", handleAnswer);
+    socket.off("ice-candidate", handleIce);
+    socket.off("user-left", handleUserLeft);
+    socket.disconnect();
+  };
+}, [roomId, userEmail]);
 
   const createPeerConnection = (peerId) => {
     if (peerConnections.current[peerId]) return peerConnections.current[peerId];
@@ -442,15 +448,15 @@ useEffect(() => {
     return pc;
   };
 
-  const handleNewPeer = async (peerId, isOfferer) => {
-    const pc = createPeerConnection(peerId);
-    if (isOfferer) {
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      socket.emit("offer", { to: peerId, offer });
-    }
-  };
+ const handleNewPeer = async (peerId, isOfferer) => {
+  const pc = createPeerConnection(peerId);
 
+  if (isOfferer) {
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    socket.emit("offer", { to: peerId, offer });
+  }
+};
   const handleIncomingOffer = async (from, offer) => {
     const pc = createPeerConnection(from);
     await pc.setRemoteDescription(offer);
@@ -532,7 +538,7 @@ async function getAndFormatTime() {
     <div className="roomPage">
       <div className="room-container">
         <div className="timerDisplay">
-  <h1>{formatTime(remainingSeconds)}</h1>
+  <h1>{remainingSeconds === -1 ? "00:00" : formatTime(remainingSeconds)}</h1>
   <p>Mode: {mode === "study" ? "📘 Study" : "☕ Break"}</p>
 </div>
     <button className="breakroomButton" disabled={mode=='study'} onClick={() => {goToBreakroom(), joinRoom()}}>Go to breakroom</button>

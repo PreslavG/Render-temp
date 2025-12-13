@@ -1,25 +1,31 @@
-import React, { useState } from "react";
+import { useState,useRef } from "react";
 import { ref, uploadBytes, getDownloadURL, listAll } from "firebase/storage";
 import { useEffect } from "react";
 import { storage } from "./scripts/firebase";
 import "./File.css"; 
 
-const categories = ["medicine", "mathematics", "language"];
+const categories = ["medicine", "mathematics", "language", "science", "history", "art", "technology", "literature"];
 
 export default function FileManager() {
   const [category, setCategory] = useState("");
   const [file, setFile] = useState(null);
   const [filesList, setFilesList] = useState([]);
 
-  const uploadFile = async () => {
-    if (!file || !category) return alert("Select category & file first!");
 
-    const fileRef = ref(storage, `files/${category}/${file.name}`);
-    await uploadBytes(fileRef, file);
-    await loadFiles();
+const fileInputRef = useRef(null);
 
-    alert("Uploaded successfully!");
-  };
+const uploadFile = async () => {
+  if (!file || !category) return alert("Select category & file first!");
+
+  const fileRef = ref(storage, `files/${category}/${file.name}`);
+  await uploadBytes(fileRef, file);
+  await loadFiles();
+
+  setFile(null);
+  fileInputRef.current.value = ""; 
+
+  alert("Uploaded successfully!");
+};
 
   const loadFiles = async () => {
     if (!category) return alert("Choose a category!");
@@ -102,9 +108,8 @@ export default function FileManager() {
           
         ))}
         <div className="upload">
-        <input type="file" id="uploadInput" onChange={(e) => setFile(e.target.files[0])} 
-        key={file ? file.name : "empty"}/>
-        <button onClick={uploadFile}>Upload</button>
+        <input type="file" ref={fileInputRef} id="uploadInput" onChange={(e) => setFile(e.target.files[0])} />
+        <button id="uploadbutton" onClick={uploadFile}>Upload</button>
         </div>
         </div>
       </div>
