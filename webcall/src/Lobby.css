@@ -16,7 +16,7 @@ html, body {
   border-radius: 0%;
   overflow: hidden;           
   z-index: 1;     
-  background: url("./images/account_background.jpg");
+  background: url(../images/account_background.jpg);
   content: "";
   inset: 0;  
   background-size: cover;
