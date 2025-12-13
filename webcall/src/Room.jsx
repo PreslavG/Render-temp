@@ -18,6 +18,7 @@ import {
   where,
 } from "firebase/firestore";
 import "./Room.css";
+import { get, set } from "firebase/database";
 
 export default function Room() {
   const sound = new Audio("/sounds/end.mp3");
@@ -42,6 +43,7 @@ export default function Room() {
   const [mode, setMode] = useState(null);
   const [remainingSeconds, setRemaining] = useState(25);
   const [showMessage, setShowMessage] = useState(false);
+  const [noactiveUsers, setNoActiveUsers] = useState(true);
   const roomOwnerId = useRef(null);
   const [adminId, setAdminId] = useState(null);
   const isOwner = auth.currentUser?.uid === adminId;
@@ -132,10 +134,9 @@ useEffect(() => {
 
   function checkBoth() {
   if (mainCount + breakCount === 0) { 
-    console.log("⚠️ Both rooms empty — stopping timer");
     setIsRunning(false);
-    updateTimerInDB(remainingSeconds, mode, false);
-  } else {
+    updateTimerInDB(-1, mode, false);
+  } else if (remainingSeconds >= 0) {
     setIsRunning(true); 
   }
 }
@@ -165,7 +166,7 @@ useEffect(() => {
   return () => unsubscribe();
 }, [adminId, roomId]);
 
-  const updateTimerInDB = async (remainingSeconds, mode, isRunning = true) => {
+  const updateTimerInDB = async (remainingSeconds, mode, isRunning) => {
   if (!adminId) {
     // nothing to write yet — adminId not known
     console.warn("updateTimerInDB: adminId not available yet");
@@ -196,7 +197,7 @@ const switchMode = () => {
   setRemaining(newSeconds);
 
   if (isOwner) {
-    updateTimerInDB(newSeconds, newMode, true); 
+    updateTimerInDB(newSeconds, newMode, isRunning); 
   }
 };
 
@@ -210,7 +211,7 @@ useEffect(() => {
       const updated = prev > 0 ? prev - 1 : 0;
 
       if (adminId && isOwner) {
-        updateTimerInDB(updated, mode, true);
+        updateTimerInDB(updated, mode, isRunning);
       }
 
       if (updated <= 0) {
@@ -272,6 +273,48 @@ useEffect(() => {
 
   return () => clearInterval(interval);
 }, [roomId, auth.currentUser]);
+
+
+   useEffect(() => {
+    if (!adminId || !roomId) return;
+    const activeUsersRef = collection(db, "users", adminId, "rooms", roomId, "activeUsers");
+    const breakroomUsersRef = collection(db, "users", adminId, "rooms", roomId, "breakroom", roomId+"breakroom", "activeUsers");
+     let count1 = 0;
+     let count2 = 0;
+
+      const unsub1 = onSnapshot(activeUsersRef, (snapshot) => {
+        count1 = snapshot.size;
+        updateTotal(count1 + count2);
+      });
+
+      const unsub2 = onSnapshot(breakroomUsersRef, (snapshot) => {
+        count2 = snapshot.size;
+        updateTotal(count1 + count2);
+      });
+
+      function updateTotal(totalActive) {
+          if (totalActive === 0) {
+            setNoActiveUsers(false);
+            setIsRunning(false); 
+            updateTimerInDB(0, mode, false); 
+          } else {
+            setNoActiveUsers(true);
+          }
+        }
+      
+
+  return () => {
+    unsub1();
+    unsub2();
+  };
+}, [adminId, roomId, isOwner, mode]);
+
+
+
+
+
+
+
 
    
 
