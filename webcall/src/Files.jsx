@@ -102,7 +102,7 @@ export default function FileManager() {
           
         ))}
         <div className="upload">
-        <input type="file" onChange={(e) => setFile(e.target.files[0])} 
+        <input type="file" id="uploadInput" onChange={(e) => setFile(e.target.files[0])} 
         key={file ? file.name : "empty"}/>
         <button onClick={uploadFile}>Upload</button>
         </div>

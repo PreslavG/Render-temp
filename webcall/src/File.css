@@ -66,9 +66,8 @@
     position: absolute;
     bottom: 0;
     right: 0;
-    margin:20px;
-    margin-right:10vh;
-    margin-bottom: 5vh;
+    margin-right:10%;
+    margin-bottom: 5%;
 
 }
 .ViewFiles h3{
@@ -135,4 +134,3 @@
     padding-left: 2vh;
     border: none;
 }
-
