@@ -38,15 +38,6 @@
 
     const user = auth.currentUser;
 
-    const handleLogout = async () => {
-      try {
-        await signOut(auth);
-        navigate("/login");
-      } catch (error) {
-        console.error("Logout failed:", error);
-      }
-    };
-
     const joinRoom = async (room) => {
             const ownerId = room.adminId;
 
@@ -85,7 +76,6 @@
               },
               { merge: true }
             );
-
   navigate(`/room/${room.id}`, {
     state: { role: room.adminId === user.uid ? "admin" : "user" },
     ownerId: ownerId,
@@ -103,24 +93,7 @@
       return () => unsubscribe();
     }, [user]);
 
-    
-
-          useEffect(() => {
-            if (!selectedRoomId) return;
-          const roomRef = doc(db,"users",user.uid ,"rooms", selectedRoomId);
-
-          const unsubscribe = onSnapshot(roomRef, (snapshot) => {
-            if (snapshot.exists()) return; 
-              const data = snapshot.data();
-              if (data.timer) {
-              setMode(data.timer.mode);
-              setRemainingSeconds(data.timer.remainingSeconds);
-            
-            }
-          });
-
-          return () => unsubscribe();
-        }, [selectedRoomId]);
+  
 
           useEffect(() => {
         if (!user) return;
@@ -151,7 +124,8 @@
           createdAt: new Date(),
           adminId: user.uid,
           adminEmail: user.email,
-          capacity: 5,     
+          capacity: 5,
+          roomBackground:"https://firebasestorage.googleapis.com/v0/b/webcalls-78f47.firebasestorage.app/o/backgrounds%2Fbackground_rain.png?alt=media&token=619bc48a-0f3d-41dd-845b-104fbdf40f72"   
         });
         setText("");
         setIsRoomPopupOpen(false);

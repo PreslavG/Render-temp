@@ -156,23 +156,7 @@ const saveChanges = async () => {
   }
 };
 
-const reauthenticateUser = async (password) => {
-  const credential = EmailAuthProvider.credential(
-    user.email,
-    password
-  );
-  try {
-  await reauthenticateWithCredential(user, credential);
-} catch (err) {
-  console.log("Reauth ERROR:", err);
-  alert(err.message);
-  return; // stop the function
-}
-};
-   
 
-   
-  
  return (
       <div className="AccountPage">
           <div className="AccountElements">
@@ -217,7 +201,7 @@ const reauthenticateUser = async (password) => {
            Logout
          </button>
 
-        {/* MODAL: IMAGE PICKER */}
+        
         <Modal
           isOpen={modalOpen}
           onRequestClose={() => setModalOpen(false)}

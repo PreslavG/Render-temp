@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import socket from "./scripts/socket";
-import { db, auth } from "./scripts/firebase";
+import { db, auth, set } from "./scripts/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import {
   collection,
@@ -16,10 +16,14 @@ import {
   deleteDoc,
   setDoc,
 } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL, listAll } from "firebase/storage";
+import { storage } from "./scripts/firebase";
 import "./Room.css";
 
 export default function Room() {
-  const sound = new Audio("/sounds/end.mp3");
+  const rain = useRef(new Audio("/sounds/rain.mp3"));
+  const forest = useRef(new Audio("/sounds/forest.mp3"));
+  const library = useRef(new Audio("/sounds/library.mp3"));
   const { roomId } = useParams();
   const navigate = useNavigate();
   const [userEmail, setUserEmail] = useState(null);
@@ -38,14 +42,121 @@ export default function Room() {
   const [showCustomTimerPopup, setShowCustomTimerPopup] = useState(false);
   const [studySession, setStudySession] = useState(25);
   const [breakTime, setbreakTime] = useState(40);
-  const [mode, setMode] = useState(null);
-  const [remainingSeconds, setRemaining] = useState(25);
+  const [mode, setMode] = useState("study");
+  const [remainingSeconds, setRemaining] = useState(-1);
   const [showMessage, setShowMessage] = useState(false);
   const [noactiveUsers, setNoActiveUsers] = useState(true);
   const roomOwnerId = useRef(null);
   const [adminId, setAdminId] = useState(null);
+  const [showFiles, setShowFiles] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [currentAudio, setCurrentAudio] = useState(null); 
+  const [volume, setVolume] = useState(0.1); 
+  const [backgroundImages, setBackgroundImages] = useState([]);
+  const [background, setBackground] = useState(null);
   const isOwner = auth.currentUser?.uid === adminId;
   const user = auth.currentUser;
+
+  const categories = ["medicine", "mathematics", "language", "science", "history", "art", "technology", "literature"];
+  const settings = ["ambient sounds", "backgrounds"];
+
+
+  const [category, setCategory] = useState("");
+  const [setting, setSetting] = useState("Sounds");
+  const [file, setFile] = useState(null);
+  const [filesList, setFilesList] = useState([]);
+
+
+const fileInputRef = useRef(null);
+
+const uploadFile = async () => {
+  if (!file || !category) return alert("Select category & file first!");
+
+  const fileRef = ref(storage, `users/${adminId}/rooms/${roomId}/files/${category}/${file.name}`);
+  await uploadBytes(fileRef, file);
+  await loadFiles();
+
+  setFile(null);
+  fileInputRef.current.value = ""; 
+
+  alert("Uploaded successfully!");
+};
+
+  const loadFiles = async () => {
+    if (!category) return alert("Choose a category!");
+
+    const folderRef = ref(storage, `users/${adminId}/rooms/${roomId}/files/${category}`);
+    const items = await listAll(folderRef);
+
+    const urls = await Promise.all(
+      items.items.map(async (item) => ({
+        name: item.name,
+        url: await getDownloadURL(item),
+      }))
+    );
+
+    setFilesList(urls);
+  };
+
+  const getFileIcon = (name, url) => {
+    const ext = name.split(".").pop().toLowerCase();
+    const isImage = ["png", "jpg", "jpeg", "gif", "webp"].includes(ext);
+
+    if (isImage) return url;
+
+    if (ext === "pdf")
+      return "https://cdn-icons-png.flaticon.com/512/337/337946.png";
+
+    if (["doc", "docx"].includes(ext))
+      return "https://cdn-icons-png.flaticon.com/512/281/281760.png";
+
+    if (["zip", "rar"].includes(ext))
+      return "https://cdn-icons-png.flaticon.com/512/337/337947.png";
+
+    if (["mp4", "mov"].includes(ext))
+      return "https://cdn-icons-png.flaticon.com/512/727/727245.png";
+
+    return "https://cdn-icons-png.flaticon.com/512/833/833524.png"; // default
+  };
+
+  useEffect(() => {
+  if (category) {
+    loadFiles();
+  }
+}, [category]);
+
+useEffect(() => {
+  if (!showSettings || setting !== "backgrounds") return;
+  loadImages();
+}, [showSettings, setting, adminId, roomId]);
+
+useEffect(() => {
+  if (adminId && roomId) loadBackground();
+}, [adminId, roomId]);
+
+useEffect(() => {
+  rain.current.loop = true;
+  forest.current.loop = true;
+  library.current.loop = true;
+
+}, []);
+
+useEffect(() => {
+  return () => {
+    [rain, forest, library].forEach(audioRef => {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    });
+  };
+}, []);
+
+const stopAllSounds = () => {
+  [rain, forest, library].forEach(audioRef => {
+    audioRef.current.pause();
+    audioRef.current.currentTime = 0;
+  });
+  setCurrentAudio(null);
+};
 
 
  useEffect(() => {
@@ -80,6 +191,11 @@ const joinRoom = async (room) => {
 
 
 const goToBreakroom = async () => {
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio.currentTime = 0;
+    setCurrentAudio(null);
+  }
   const ref = doc(db, "users", auth.currentUser.uid , "rooms", roomId, "breakroom", roomId+"breakroom");  
 
   await setDoc(ref, {
@@ -221,6 +337,8 @@ useEffect(() => {
 
   return () => clearInterval(interval);
 }, [isRunning, mode, adminId, isOwner]);
+
+
 
   useEffect(() => {
   if (!adminId || !roomId) return;
@@ -478,6 +596,11 @@ useEffect(() => {
 
   // Room controls
   const leaveRoom = async () => {
+    if (currentAudio) {
+    currentAudio.pause();
+    currentAudio.currentTime = 0;
+    setCurrentAudio(null);
+  }
     Object.values(peerConnections.current).forEach(pc => pc.close());
     peerConnections.current = {};
     localStreamRef.current?.getTracks().forEach(track => track.stop());
@@ -519,6 +642,63 @@ useEffect(() => {
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 };
 
+const playSound = (audioRef) => {
+  if (currentAudio && currentAudio !== audioRef.current) {
+    currentAudio.pause();
+    currentAudio.currentTime = 0;
+  }
+
+  if (currentAudio === audioRef.current && !audioRef.current.paused) {
+    audioRef.current.pause();
+    setCurrentAudio(null);
+  } else if (audioRef.current) {
+    audioRef.current.play();
+    setCurrentAudio(audioRef.current);
+  }
+};
+
+
+   const chooseImage = async (url) => {
+  if (!user) return;
+  
+  setBackgroundUrl(url);
+  console.log("Selected Url is:", url);
+};
+
+ const saveBackgroundPic = async (url) => {
+  const docRef = doc(db, "users", adminId, "rooms", roomId);
+  await setDoc(docRef, { roomBackground: url }, { merge: true });
+  setBackground(url);
+};
+
+const loadBackground = async () => {
+  const docRef = doc(db, "users", adminId, "rooms", roomId);
+  const snap = await getDoc(docRef);
+
+  if (snap.exists()) {
+    setBackground(snap.data().roomBackground || null);
+  }
+};
+
+ const loadImages = async () => {
+    if (!user) return;
+
+    const folderRef = ref(storage, `backgrounds/`);
+    const list = await listAll(folderRef);
+
+    const urls = await Promise.all(
+      list.items.map(i => getDownloadURL(i))
+    );
+
+    setBackgroundImages(urls);
+  };
+
+useEffect(() => {
+  [rain, forest, library].forEach(audioRef => {
+    if (audioRef.current) audioRef.current.volume = volume;
+  });
+}, [volume]);
+
 async function getAndFormatTime() {
   const timerRef = doc(db, "users", auth.currentUser.uid, "rooms", roomId );
   const timerSnap = await getDoc(timerRef);
@@ -536,7 +716,12 @@ async function getAndFormatTime() {
       }
   return (
     <div className="roomPage">
-      <div className="room-container">
+      <div className="room-container"
+      style={{
+        backgroundImage: background ? `url(${background})` : "none",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}>
         <div className="timerDisplay">
   <h1>{remainingSeconds === -1 ? "00:00" : formatTime(remainingSeconds)}</h1>
   <p>Mode: {mode === "study" ? "📘 Study" : "☕ Break"}</p>
@@ -581,7 +766,8 @@ async function getAndFormatTime() {
           <div className="narrowContent">
             <img src="/images/chatPng.png" className="chatPng1" onClick={() => setWide(!wide)} />
             <img src="/images/timer.png" className="chatPng" onClick={() => setShowTimerPopup(true)} />
-            <img src="/images/settings.png" className="chatPng"/>
+            <img src="/images/files.png" className="chatPng" onClick={() => setShowFiles(true)} />
+            <img src="/images/settings.png" className="chatPng2" onClick={() => setShowSettings(true)} />
           </div>
         )}
         
@@ -607,6 +793,60 @@ async function getAndFormatTime() {
   </div>
 )}
 
+{showFiles && (
+  <div className="popup-overlay">
+    <div className="categoriesAndFiles">
+         <div className="categorySelect">
+          <div className="category-list">
+            <h1>Categories List:</h1>
+            {categories.map((cat) => (
+                <div
+                key={cat}
+                className={`category-item ${category === cat ? "active" : ""}`}
+                onClick={() => {setCategory(cat)}}
+                >
+                {cat}
+                </div>
+            ))}
+            </div>
+            </div>
+    
+        <div className="ViewFiles">
+          <h3>Files in {category}</h3>
+    
+          {filesList.length === 0 && <p>No files here yet.</p>}
+    
+          <div className="file-grid">
+            {filesList.map((file, index) => (
+              <div className="file-item" key={index}>
+                <img
+                  src={getFileIcon(file.name, file.url)}
+                  alt={file.name}
+                  className="file-thumb"
+                  onClick={() => window.open(file.url, "_blank")}
+                />
+    
+                <p className="file-name">{file.name}</p>
+    
+              </div>
+              
+            ))}
+            <div className="upload">
+            <input type="file" ref={fileInputRef} id="uploadInput" onChange={(e) => setFile(e.target.files[0])} />
+            <button id="uploadbutton" onClick={uploadFile}>Upload</button>
+            </div>
+            <button id="closebutton" onClick={() => setShowFiles(false)}>
+              ❌
+            </button>
+            </div>
+          </div>
+        </div>
+      
+
+    </div>
+)}
+
+
 {showMessage && (
   <div className="popup-overlay">
     <div className="popup-box">
@@ -619,6 +859,79 @@ async function getAndFormatTime() {
        
     </div>
   </div>
+)}
+
+{showSettings && (
+  <div className="popup-overlay">
+    <div className="abientSoundsAndBackgrounds">
+      <button id="closebutton" onClick={() => setShowSettings(false)}>
+              ❌
+            </button>
+         <div className="settingSelect">
+          <div className="settings-list">
+            {settings.map((set) => (
+                <div
+                key={set}
+                className={`settings-item ${setting === set ? "active" : ""}`}
+                onClick={() => {setSetting(set)}}
+                >
+                {set}
+                </div>
+            ))}
+            </div>
+            </div>
+    
+        <div className="SoundsAndBackgrounds">
+    
+          {setting === "ambient sounds" && (
+          <div className="sound-grid">
+            <button className="sound" onClick={()=> playSound(rain)}>Raining ☔</button>
+            <button className="sound" onClick={()=> playSound(forest)}>Forest 🌳</button>
+            <button className="sound" onClick={()=> playSound(library)}>Library 📚</button>
+            <button className="sound" onClick={{stopAllSounds}}>Turn Off</button>
+            <label htmlFor="volume">Volume: {Math.round(volume * 100)}%</label>
+            <input
+              type="range"
+              id="volume"
+              min="0"
+              max="1"
+              step="0.01"
+              value={volume}
+              onChange={(e) => setVolume(parseFloat(e.target.value))}
+            />
+          </div>
+          
+          
+        )}
+
+        {setting === "backgrounds" && (
+          <div className="background-grid">
+          {backgroundImages.map((url, index) => (
+              <img
+                key={index}
+                src={url}
+                alt=""
+                width={400}
+                height={200}
+                style={{
+                  cursor: "pointer",
+                  borderRadius: 10,
+                  border: "3px solid transparent"
+                }}
+                onClick={() => {
+                  saveBackgroundPic(url);
+                  setShowSettings(false);
+                }}
+              />
+            ))}
+          </div>
+        )}
+            
+            </div>
+          </div>
+        </div>
+      
+
 )}
 
 {showCustomTimerPopup && (

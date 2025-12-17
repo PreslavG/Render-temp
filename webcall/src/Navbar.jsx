@@ -49,12 +49,6 @@ export default function Navbar() {
             Friends
           </button>
 
-
-        <button className="navButton"
-          onClick={() => navigate("/files")} >
-          Files
-        </button>
-
         <button className="navButton"
           onClick={() => navigate("/lobby")} >
           Rooms
