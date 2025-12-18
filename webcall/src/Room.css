@@ -30,7 +30,6 @@ body {
   background-size:cover;
   background-position: center;
   background-repeat: no-repeat;
-  
   transform: scale(1.1);        
   z-index: -1;                 
 }
@@ -134,7 +133,6 @@ body {
   padding: 0;
   cursor: pointer;
   border-radius: 100%;
-  border: 2px solid rgb(0, 0, 0);
   margin: 20px;
   margin-bottom: 0;
   
@@ -715,7 +713,17 @@ justify-content: center;
    display: flex;
    flex-direction: column;
    gap: 2vh;
+   width: 100%;
 }
+.sound-buttons{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
 
 .sound{
   cursor: pointer;
@@ -725,3 +733,12 @@ justify-content: center;
   border-radius: 12px;
   font-family: monospace;
 }
+
+.roomWrapper{
+  display: flex;
+  flex-direction:row;
+  width: 100%;
+}
+
+
+

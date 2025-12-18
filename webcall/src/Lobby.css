@@ -57,11 +57,14 @@ html, body {
     display: flex;
     flex-direction:row;
     justify-content: space-between;
-    gap: 20px;
 }
 
 .lobbyButton{
     background-color: rgb(0, 0, 0,0.5);
+    justify-content: center;
+    align-items: center;
+    display: flex;
+    gap: 10px;
     border-radius: 20%;
     height: 10vh;
     width: 30vh;
@@ -147,15 +150,23 @@ html, body {
   justify-content: center;
   gap: 10px;
   width: 100%;
+  margin-top: 5vh;
 }
 
 .RoomsButtons{
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;  
-  width: 100%;
-  font-size: x-large;
-  gap: 10px;
+ display: flex;
+ justify-content: center;
+ flex-wrap: wrap;
+ flex-direction: row;
+ width: 90%;
+ gap: 10px;
+ background-color: rgba(14, 14, 14, 0.5);
+   font-family: monospace;
+ color: rgb(228, 239, 231);
+ text-shadow: 2px 2px 20px rgb(0, 0, 0);
+ transition: background 0.25s;
+ 
+
 }
 
 
@@ -164,10 +175,9 @@ html, body {
   display: flex;
   align-items: center;
   flex-direction: row;
-  gap: 20px; /* smaller gap recommended */
-  width: 90%;
+  gap: 10px; /* smaller gap recommended */
+  width: 100%;
   background-color: rgba(14, 14, 14, 0.5);
-  border-radius: 10%;
   border-color: rgb(228, 239, 231);
   cursor: pointer;
   font-family: monospace;
@@ -176,6 +186,7 @@ html, body {
   transition: background 0.25s;
   font-size: xx-large;
   height: 7vh;
+  padding: 0;
 }
 
 /* ⭐ make all elements inside equal width */
@@ -189,31 +200,27 @@ html, body {
 
 .roomElements{
  display: flex;
- justify-content: space-between;
+ justify-content: center;
  align-items: center;
+ text-align: center;
+ flex-wrap: wrap;
  flex-direction: row;
- gap: 20px;
+ border-top-left-radius: 20px;
+ border-top-right-radius: 20px;
+ gap: 10px;
  width: 90%;
  background-color: rgba(14, 14, 14, 0.5);
- border-radius: 10%;
- border-radius: 80%;
- border-bottom-left-radius: 0;
- border-bottom-right-radius: 0;
  border: 2px solid;
  border-color: rgb(228, 239, 231);
  font-family: monospace;
  color: rgb(228, 239, 231);
  text-shadow: 2px 2px 20px rgb(0, 0, 0);
  transition: background 0.25s;
- padding-top: 10px;
  
 
 }
-.roomElements h1{
-  margin-left: 17vh;
-  margin-right: 17vh;
 
- }
+
 
  .roomElements > * {
   flex: 1;
@@ -240,7 +247,7 @@ html, body {
 
 
 #ownerPic {
-  width: 7vh;
+  max-width: 7vh;
   height: 100%;
   object-fit: cover;
   border-radius: 100%;   /* makes it circular */
@@ -402,3 +409,31 @@ html, body {
   
 }
 
+#iconDelete{
+ position: absolute;
+ align-items: center;
+ right: 0;
+ margin-right: 2vh;
+ font-size: x-large;
+ width: 5vh;
+ cursor: pointer;
+ color: #c0b8b8;
+ height: 7vh;
+}
+
+#addRoombtn{
+  font-size: xx-large;
+  cursor: pointer;
+  justify-content: center;
+  align-items: center;
+  display: flex;
+  height: 7vh;
+  width: 5vh;
+}
+
+
+
+
+#iconDelete:hover{
+  color: rgb(237, 0, 0);
+}

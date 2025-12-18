@@ -27,6 +27,7 @@ export default function Room() {
   const { roomId } = useParams();
   const navigate = useNavigate();
   const [userEmail, setUserEmail] = useState(null);
+  const [userName, setUserName] = useState(null);
 
   const localVideoRef = useRef();
   const localStreamRef = useRef();
@@ -408,45 +409,83 @@ useEffect(() => {
 }, []);
 
 
-   useEffect(() => {
-    if (!adminId || !roomId) return;
-    const activeUsersRef = collection(db, "users", adminId, "rooms", roomId, "activeUsers");
-    const breakroomUsersRef = collection(db, "users", adminId, "rooms", roomId, "breakroom", roomId+"breakroom", "activeUsers");
-     let count1 = 0;
-     let count2 = 0;
+ useEffect(() => {
+  if (!adminId || !roomId) return;
 
-      const unsub1 = onSnapshot(activeUsersRef, (snapshot) => {
-        count1 = snapshot.size;
-        updateTotal(count1 + count2);
-      });
+  const ACTIVE_TIMEOUT = 10000; 
 
-      const unsub2 = onSnapshot(breakroomUsersRef, (snapshot) => {
-        count2 = snapshot.size;
-        updateTotal(count1 + count2);
-      });
+  const mainRef = collection(
+    db,
+    "users",
+    adminId,
+    "rooms",
+    roomId,
+    "activeUsers"
+  );
 
-      function updateTotal(totalActive) {
-          if (totalActive === 0) {
-            setNoActiveUsers(false);
-            setIsRunning(false); 
-            updateTimerInDB(0, mode, false); 
-          } else {
-            setNoActiveUsers(true);
-          }
-        }
-      
+  const breakRef = collection(
+    db,
+    "users",
+    adminId,
+    "rooms",
+    roomId,
+    "breakroom",
+    roomId + "breakroom",
+    "activeUsers"
+  );
+
+  let mainActive = 0;
+  let breakActive = 0;
+
+  const countActive = (snapshot) => {
+    const now = Date.now();
+    let count = 0;
+
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      if (!data.lastSeen) return;
+
+      const diff = now - data.lastSeen.toMillis();
+      if (diff < ACTIVE_TIMEOUT) count++;
+    });
+
+    return count;
+  };
+
+  const updateState = () => {
+    const total = mainActive + breakActive;
+
+    if (total === 0) {
+      setNoActiveUsers(false);
+      setIsRunning(false);
+      updateTimerInDB(0, mode, false);
+    } else {
+      setNoActiveUsers(true);
+    }
+  };
+
+  const unsubMain = onSnapshot(mainRef, (snap) => {
+    mainActive = countActive(snap);
+    updateState();
+  });
+
+  const unsubBreak = onSnapshot(breakRef, (snap) => {
+    breakActive = countActive(snap);
+    updateState();
+  });
 
   return () => {
-    unsub1();
-    unsub2();
+    unsubMain();
+    unsubBreak();
   };
-}, [adminId, roomId, isOwner, mode]);
+}, [adminId, roomId, mode]);
 
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (!user) navigate("/login");
-      else setUserEmail(user.email);
+      else {setUserEmail(user.email), setUserName(user.name)}
+      
     });
     return () => unsubscribe();
   }, [navigate]);
@@ -477,6 +516,20 @@ useEffect(() => {
     window.removeEventListener("beforeunload", handleBeforeUnload);
   };
 }, [roomId, auth.currentUser]);
+
+    useEffect(() => {
+            if (!user) return;
+
+            const interval = setInterval(async () => {
+              await setDoc(
+                doc(db, "users", user.uid, "rooms", roomId, "activeUsers", user.uid),
+                { lastSeen: serverTimestamp() },
+                { merge: true }
+              );
+            }, 5000); 
+
+            return () => clearInterval(interval);
+          }, [user, roomId]);
 
 useEffect(() => {
   if (!userEmail) return;
@@ -606,8 +659,10 @@ useEffect(() => {
     localStreamRef.current?.getTracks().forEach(track => track.stop());
     socket.emit("leave-room", { roomId });
    if (adminId) {
-    await deleteDoc(doc(db, "users", adminId, "rooms", roomId, "activeUsers", auth.currentUser.uid));
-   }
+    await deleteDoc(
+      doc(db, "users", adminId, "rooms", roomId, "activeUsers", user.uid)
+    );
+  }
     navigate("/lobby");
   };
 
@@ -742,7 +797,7 @@ async function getAndFormatTime() {
             <h1 className="arrow-right" onClick={() => setWide(!wide)}>❌</h1>
             <div className="messagesBox">
               {messages.map((msg) => {
-                const isMe = msg.sender === userEmail;
+                const isMe = msg.sender === userName;
                 return (
                   <div key={msg.id} className={`message ${isMe ? "message-me" : "message-other"}`}>
                     {!isMe && <strong>{msg.sender}: </strong>}
@@ -885,10 +940,11 @@ async function getAndFormatTime() {
     
           {setting === "ambient sounds" && (
           <div className="sound-grid">
+            <div className="sound-buttons">
             <button className="sound" onClick={()=> playSound(rain)}>Raining ☔</button>
             <button className="sound" onClick={()=> playSound(forest)}>Forest 🌳</button>
             <button className="sound" onClick={()=> playSound(library)}>Library 📚</button>
-            <button className="sound" onClick={{stopAllSounds}}>Turn Off</button>
+            </div>
             <label htmlFor="volume">Volume: {Math.round(volume * 100)}%</label>
             <input
               type="range"
@@ -899,6 +955,7 @@ async function getAndFormatTime() {
               value={volume}
               onChange={(e) => setVolume(parseFloat(e.target.value))}
             />
+            <button className="sound" onClick={(stopAllSounds)}>Turn Off</button>
           </div>
           
           

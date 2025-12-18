@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { auth, db } from "./scripts/firebase";
 import { collection, onSnapshot, addDoc, deleteDoc, query, where, getDocs,setDoc, getDoc, doc} from "firebase/firestore";
 import "./Friends.css"
+import { FaUserFriends } from "react-icons/fa";
 
 
 export default function Friends() {
@@ -315,12 +316,20 @@ export default function Friends() {
                 {friendRequests.length === 0 && <p className="noPendMessages">No pending requests.</p>}
                 {friendRequests.map((req) => (
                   <div key={req.id} className="friendRequestItem">
-                    <span>
-                      {req.fromName} ({req.fromEmail})
+                    <img
+                              src={req.profilePic || "./images/default-avatar.jpg"} 
+                              alt={req.name || req.friendEmail}
+                              id="friendreqPic"
+                     />
+                    <div className="temp">
+                    <span id="nameAndEmail">
+                      <h1>{req.fromName}</h1>
+                      <h2>{req.fromEmail}</h2>
                     </span>
-                    <div>
-                      <button onClick={() => acceptRequest(req)}>Accept</button>
-                      <button onClick={() => rejectRequest(req)}>Reject</button>
+                    <div className="reqButtons">
+                      <button id="requestButtonAccept" onClick={() => acceptRequest(req)}>Confirm</button>
+                      <button id="requestButtonDeny" onClick={() => rejectRequest(req)}>Delete</button>
+                    </div>
                     </div>
                   </div>
                 ))}
@@ -367,7 +376,7 @@ export default function Friends() {
         {isRoomListOpen && selectedFriend && (
           <div className="popup-overlay">
             <div className="popup">
-              <h3>Invite {selectedFriend.friendEmail} to a Room</h3>
+              <h3>Invite {selectedFriend.name} to join your room?</h3>
               <select
                 value={selectedRoomId}
                 onChange={(e) => setSelectedRoomId(e.target.value)}
@@ -379,9 +388,9 @@ export default function Friends() {
                   </option>
                 ))}
               </select>
-              <div>
-                <button onClick={sendRoomInvite}>Send Invite</button>
-                <button onClick={() => setIsRoomListOpen(false)}>Cancel</button>
+              <div className="inviteFrBtns">
+                <button className="singleBtn" onClick={sendRoomInvite}> <FaUserFriends /> Send Invite</button>
+                <button className="singleBtn" onClick={() => setIsRoomListOpen(false)}>Cancel</button>
               </div>
             </div>
           </div>

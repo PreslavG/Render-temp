@@ -13,7 +13,8 @@
     getDoc,
     serverTimestamp,
   } from "firebase/firestore";
-
+  import { FaTrash, FaPlus } from 'react-icons/fa';
+  import {FaTrashAlt} from 'react-icons/fa';
   import "./Lobby.css";
 
   
@@ -32,11 +33,23 @@
     const [rooms, setRooms] = useState([]);
     const [activeTab, setActiveTab] = useState("rooms");
 
-    const [selectedRoomId, setSelectedRoomId] = useState("");
 
     const ACTIVE_THRESHOLD = 5000;
 
     const user = auth.currentUser;
+
+    const isUserActive = (user) => {
+          if (!user.lastSeen) return false; 
+          const lastSeenMs = user.lastSeen.toDate
+            ? user.lastSeen.toDate().getTime()
+            : new Date(user.lastSeen).getTime();
+          return Date.now() - lastSeenMs < ACTIVE_THRESHOLD;
+        };
+
+        const getActiveUsers = (users) => {
+          if (!users) return [];
+          return users.filter(isUserActive);
+        };
 
     const joinRoom = async (room) => {
             const ownerId = room.adminId;
@@ -54,11 +67,11 @@
             const ACTIVE_THRESHOLD = 15000; 
             const now = Date.now();
 
-            const active = allUsers.filter(u => {
-              if (!u.lastSeen) return true; 
-              const lastSeenMs = u.lastSeen.toDate ? u.lastSeen.toDate().getTime() : new Date(u.lastSeen).getTime();
-              return now - lastSeenMs < ACTIVE_THRESHOLD;
-            });
+            const active = getActiveUsers(allUsers);
+                        if (active.length >= room.capacity) {
+                setRoomFullPopup(true); 
+                return;
+              }
 
             if (active.length >= room.capacity) {
               alert("Room is full!");
@@ -81,7 +94,7 @@
     ownerId: ownerId,
   });
 };
-
+    
 
     useEffect(() => {
       if (!user) return;
@@ -134,6 +147,22 @@
       }
     };
 
+    const deleteRoom = async (room) => {
+  if (!user) return;
+
+  const confirmDelete = window.confirm(`Are you sure you want to delete "${room.name}"?`);
+  if (!confirmDelete) return;
+
+  try {
+    await deleteDoc(doc(db, "users", user.uid, "rooms", room.id));
+
+    alert(`Room "${room.name}" deleted successfully`);
+  } catch (err) {
+    console.error("Error deleting room:", err);
+    alert("Failed to delete the room");
+  }
+};
+
     const getOwnerProfilePic = async (ownerId) => {
       try {
         const docRef = doc(db, "users", ownerId);
@@ -177,27 +206,18 @@
 
   useEffect(() => {
     setUrl();
+  }, [user]);
+
+        const getActiveUsersList = (users) => {
+  if (!users) return [];
+  const ACTIVE_THRESHOLD = 5000; // 5 seconds
+  return users.filter(u => {
+    if (!u.lastSeen) return false;
+    const lastSeenMs = u.lastSeen.toDate ? u.lastSeen.toDate().getTime() : new Date(u.lastSeen).getTime();
+    return Date.now() - lastSeenMs < ACTIVE_THRESHOLD;
   });
+};
 
-    const getActiveUsers = (users) => {
-          if (!users) return [];
-
-          const now = Date.now();
-
-          return users.filter(user => {
-            if (!user.lastSeen) return true; 
-
-            let lastSeenMs;
-
-            if (user.lastSeen.toDate) {
-              lastSeenMs = user.lastSeen.toDate().getTime();
-            } else {
-              lastSeenMs = new Date(user.lastSeen).getTime();
-            }
-
-            return now - lastSeenMs < ACTIVE_THRESHOLD;
-          });
-        };
     // =======================================================
     // 🖥️ RENDER
     // =======================================================
@@ -236,7 +256,6 @@
         
         </div>
             <div className="TitlesAndRooms">
-              <h1 className="buttonlistTitle">Available Rooms:</h1>
               <span className="roomElements">
                 <h1>Name</h1>
                 <h1>Owner</h1>
@@ -245,36 +264,44 @@
               </span>
               <div className="RoomsButtons">
               {rooms.length === 0 && <p className="NoRooms">No rooms available. Create one!</p>}
+              
               {rooms.map((room) => (
-                <button
-                  key={room.id}
-                  className="roomButton"
-                  onClick={() =>{alert(activeUsers[room.id]),joinRoom(room)}}
-                >
-                <h3>{room.name} 
-                  </h3>
-                <div className="imageShower">
-                  <img
-                    src={room.adminId === user.uid ? profilePic : ownerPics[room.adminId]}
-                    id="ownerPic"
-                    alt="Profile"
-                  />
-                </div>
+                <div key={room.id} className="roomWrapper">
+                  <button
+                    className="roomButton"
+                    onClick={() => joinRoom(room)}
+                  >
+                    <h3>{room.name}</h3>
+                    <div className="imageShower">
+                      <img
+                        src={room.adminId === user.uid ? profilePic : ownerPics[room.adminId]}
+                        id="ownerPic"
+                        alt="Profile"
+                      />
+                    </div>
                     <h1 className="roomPplcount">
-                        {activeUsers[room.id]}/{room.capacity}
+                      {getActiveUsersList(activeUsersList[room.id]).length}/{room.capacity}
                     </h1>
-                            <ul className="activeUsersList">
-                              {getActiveUsers(activeUsersList[room.id]).map((user) => (
-                                <li key={user.email}>{user.name}</li>
-                              ))}
-                            </ul>
+                    <ul className="activeUsersList">
+                      {getActiveUsers(activeUsersList[room.id]).map((user) => (
+                        <li key={user.email}>{user.name}</li>
+                      ))}
+                    </ul>
                   </button>
+
+                  {room.adminId === user.uid && (
+                    
+                      <FaTrashAlt id="iconDelete" onClick={() => deleteRoom(room)}/> 
+                    
+                  )}
+                </div>
+                  
                   ))}
               </div>
             </div>
             <div className="buttons">
               <button onClick={() => setIsRoomPopupOpen(true)} className="lobbyButton">
-                Add Room
+                <FaPlus/> Add room
               </button>              
             </div>
           </div>
