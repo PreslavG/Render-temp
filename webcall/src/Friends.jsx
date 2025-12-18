@@ -17,10 +17,6 @@ export default function Friends() {
 
   const [activeTab, setActiveTab] = useState("friends");
 
-
-
-
-
   const [roomInvites, setRoomInvites] = useState([]);
 
   const [text, setText] = useState("");
@@ -105,7 +101,7 @@ export default function Friends() {
         await addDoc(collection(db, "users", targetUserId, "friendRequests"), {
           fromId: user.uid,
           fromEmail: user.email,
-          fromName: user.displayName || "Anonymous",
+          fromName: user.displayName ,
           status: "pending",
           createdAt: new Date(),
         });
@@ -129,7 +125,7 @@ export default function Friends() {
             }),
             addDoc(collection(db, "users", req.fromId, "friends"), {
               friendId: user.uid,
-              name: user.displayName || "Anonymous",
+              name: user.displayName ,
               friendEmail: user.email,
             }),
           ]);
@@ -138,6 +134,31 @@ export default function Friends() {
           console.error("Error accepting request:", e);
         }
       };
+
+       const deleteFriend = async (friend) => {
+        if (!friend || !user) return;
+
+        try {
+          await deleteDoc(
+            doc(db, "users", user.uid, "friends", friend.id)
+          );
+
+                const q = query(
+                  collection(db, "users", friend.friendId, "friends"),
+                  where("friendId", "==", user.uid)
+                );
+
+                const snapshot = await getDocs(q);
+                snapshot.forEach((docSnap) => deleteDoc(docSnap.ref));
+
+                setIsRoomListOpen(false);
+                setSelectedFriend(null);
+              } catch (error) {
+                console.error("Error deleting friend:", error);
+              }
+            };
+
+
        const setUrl = async () => {
           try {
             const docRef = doc(db, "users", auth.currentUser.uid);
@@ -199,6 +220,7 @@ export default function Friends() {
               await addDoc(collection(db, "users", targetUserId, "roomInvites"), {
                 fromId: user.uid,
                 fromEmail: user.email,
+                fromName: user.displayName || "Anonymous",
                 roomId: selectedRoomId,
                 roomName: roomData.name,
                 status: "pending",
@@ -217,9 +239,10 @@ export default function Friends() {
                 try {
                   await setDoc(doc(db, "users", user.uid, "rooms", invite.roomId), {
                     name: invite.roomName,
+                    fromName: invite.fromName,
                     invitedBy: invite.fromEmail,
-                    adminId: invite.fromId,        // 🟢 КОЙ Е OWNER-а
-                    capacity: 5,                   // ако имаш capacity
+                    adminId: invite.fromId,        
+                    capacity: 5,                   
                     createdAt: new Date(),
                   });
                   await deleteDoc(doc(db, "users", user.uid, "roomInvites", invite.id));
@@ -342,12 +365,12 @@ export default function Friends() {
                 {roomInvites.length === 0 && <p className="noPendMessages">No pending room invites.</p>}
                 {roomInvites.map((invite) => (
                   <div key={invite.id} className="roomInviteItem">
-                    <span>
-                      {invite.fromEmail} invited you to <b>{invite.roomName}</b>
+                    <span id="inviteText">
+                      <h3>{invite.fromName}</h3> invited you to <b>{invite.roomName}</b>
                     </span>
-                    <div>
-                      <button onClick={() => acceptRoomInvite(invite)}>Accept</button>
-                      <button onClick={() => rejectRoomInvite(invite)}>Reject</button>
+                    <div className="reqButtons">
+                      <button id="requestButtonAccept" onClick={() => acceptRoomInvite(invite)}>Accept</button>
+                      <button id="requestButtonDeny" onClick={() => rejectRoomInvite(invite)}>Reject</button>
                     </div>
                   </div>
                 ))}
@@ -355,6 +378,14 @@ export default function Friends() {
                 
           </div>
              )}
+             {roomInvites.map((invite) => {
+              console.log(invite);
+              return (
+                <div key={invite.id} className="roomInviteItem">
+                  ...
+                </div>
+              );
+            })}
 
           {isFriendsPopupOpen && (
           <div className="popup-overlay">
@@ -390,6 +421,7 @@ export default function Friends() {
               </select>
               <div className="inviteFrBtns">
                 <button className="singleBtn" onClick={sendRoomInvite}> <FaUserFriends /> Send Invite</button>
+                <button className="singleBtn" onClick={() => deleteFriend(selectedFriend)}>Remove friend</button>
                 <button className="singleBtn" onClick={() => setIsRoomListOpen(false)}>Cancel</button>
               </div>
             </div>

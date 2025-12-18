@@ -247,10 +247,10 @@ html, body {
 
 
 #ownerPic {
-  max-width: 7vh;
+  width: 7vh;
   height: 100%;
   object-fit: cover;
-  border-radius: 100%;   /* makes it circular */
+  border-radius: 100%; 
 }
 
 

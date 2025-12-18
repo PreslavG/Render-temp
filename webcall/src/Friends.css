@@ -1,18 +1,26 @@
-.friendsPage{
+.friendsPage {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
     height: 100vh;
-    background-image: url(/images/friends.jpg);
-    background-size: cover;
-    background-repeat: no-repeat;
+    overflow: hidden;
+}
+
+.friendsPage::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: url("/images/friends.png") center/cover no-repeat;
+    filter: blur(5px);
+    transform: scale(1.1);
+    z-index: -1;
 }
 
 .Friends{
     background-color: rgba(255, 255, 255, 0.9);
     width: 70%;
     height: 70%;
-    border-radius: 10px;
 
 }
 
@@ -192,7 +200,7 @@ select option{
   height: 100%;
   margin: 0;
   color: rgb(255, 255, 255);
-  background-color: rgb(134, 153, 138); /* default tab */
+  background-color: rgb(134, 153, 138); 
   padding: 5px 10px;
   transition: 0.2s ease;
 }
@@ -228,7 +236,21 @@ select option{
     background-color: rgb(255, 255, 255,0.5);
     font-family: monospace;
 }
-.FriendRequests{
+
+.roomInviteItem{
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    height: 100%;
+    background-color: rgb(255, 255, 255,0.5);
+    font-family: monospace;
+}
+
+.FriendRequests,
+.RoomInvites{
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 10px;
@@ -256,13 +278,13 @@ select option{
     padding: 10px;
     border-radius: 10px;
     border: 1px solid black;
-    background-color: rgb(103, 197, 226);
+    background-color: rgb(134, 153, 138);
     cursor: pointer;
     font-family: monospace;
     width: 100%;
 }
 #requestButtonAccept:hover{
-    background-color: rgb(13, 13, 99);
+    background-color: rgb(103, 226, 124);
     color: white;
     
 }
@@ -296,5 +318,11 @@ select option{
     justify-content: center;
     width: 100%;
     height: 90%;
+}
+#inviteText{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
 }
 

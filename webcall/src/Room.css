@@ -426,9 +426,31 @@ justify-content: center;
 .customPomodoroPopup {
   display: flex;
   flex-direction: column;
+  padding: 2vh;
+  border-radius: 10%;
   gap: 15px;
   margin-bottom: 20px;
-  background-color: #afe29b;
+  background-color: #ffffff;
+}
+
+.timerBtns{
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.timerBtns button{
+  font-family: monospace;
+  padding: 8px 16px;
+  background: #08090b;
+  color: white;
+  cursor: pointer;
+  border-radius: 12px;
+}
+
+.timerBtns button:hover {
+  background: #ffffff;
+  color: black;
 }
 
 .breakroomButton {
@@ -732,6 +754,10 @@ justify-content: center;
   padding: 8px 16px;
   border-radius: 12px;
   font-family: monospace;
+}
+.sound:hover{
+  background-color: #ffffff;
+  color: black;
 }
 
 .roomWrapper{

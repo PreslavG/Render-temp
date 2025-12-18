@@ -55,6 +55,9 @@ export default function Room() {
   const [volume, setVolume] = useState(0.1); 
   const [backgroundImages, setBackgroundImages] = useState([]);
   const [background, setBackground] = useState(null);
+  const [invalidValueMessageMaxStudy, setInvalidValueMessageMaxStudy] = useState(false);
+  const [invalidValueMessageMinBreak, setInvalidValueMessageMinBreak] = useState(false);
+  const [invalidValueMessageMaxBreak, setInvalidValueMessageMaxBreak] = useState(false);
   const isOwner = auth.currentUser?.uid === adminId;
   const user = auth.currentUser;
 
@@ -836,8 +839,8 @@ async function getAndFormatTime() {
       <h3>Set Pomodoro Duration (max 120 min)</h3>
 
 
-      <div>
-        <button onClick={() => {const secs = 20 ; setRemaining(secs), setbreakTime(5), setMode("study"),setIsRunning(true),setStudySession(25); updateTimerInDB( secs, "study"); getAndFormatTime();}}>25/5</button> 
+      <div className="timerBtns">
+        <button onClick={() => {const secs = 25 ; setRemaining(secs), setbreakTime(5), setMode("study"),setIsRunning(true),setStudySession(25); updateTimerInDB( secs, "study"); getAndFormatTime();}}>25/5</button> 
         <button onClick={() => { const secs = 50 ;setRemaining(50 * 60), setbreakTime(10),setMode("study"),setIsRunning(true),setStudySession(50), updateTimerInDB( secs, "study" )}}>50/10</button> 
         <button onClick={() => { const secs = 90 ;setRemaining(90 * 60), setbreakTime(15), setMode("study"),setIsRunning(true),setStudySession(90), updateTimerInDB( secs, "study" )}}>90/15</button> 
         <button onClick={() => { setShowCustomTimerPopup(true), setShowTimerPopup(false)}}>Custom</button> 
@@ -992,7 +995,7 @@ async function getAndFormatTime() {
 )}
 
 {showCustomTimerPopup && (
-  <div className="popup-overlay">
+   <div className="popup-overlay">
     <div className="customPomodoroPopup">
       <h3>Set Pomodoro Duration (max 120 min)</h3>
       <label htmlFor="studyTimer">Study timer</label>
@@ -1003,8 +1006,14 @@ async function getAndFormatTime() {
         value={studySession}
         onChange={(e) => {
           let value = Number(e.target.value);
-          if (value > 120) value = 120;      
-          if (value < 1) value = 1;         
+          if (value > 120) {setInvalidValueMessageMaxStudy(true), value=120}
+          else{
+            setInvalidValueMessageMaxStudy(false);
+          }                
+          if (value < 1) {setInvalidValueMessageMinBreak(true), value= ""}
+          else{
+            setInvalidValueMessageMinBreak(false);
+          }          
           setStudySession(value);
         }}
       />
@@ -1016,14 +1025,29 @@ async function getAndFormatTime() {
         value={breakTime}
         onChange={(e) => {
           let value = Number(e.target.value);
-          if (value > 50) value = 50;      // max 2 hours
-          if (value < 1) value = 1;          // min 1 minute
+          if (value > 50)  {setInvalidValueMessageMaxBreak(true), value= 50}
+          else{
+            setInvalidValueMessageMinBreak(false);
+          }                // max 2 hours
+          if (value < 1) {setInvalidValueMessageMinBreak(true), value= ""}
+          else{
+            setInvalidValueMessageMinBreak(false);
+          }          
           setbreakTime(value);
         }}
+
+        
       />
+      {invalidValueMessageMinBreak && (<p className="error-message">Timer can't be less than 1 minute.</p>
+        )}
+        {invalidValueMessageMaxBreak && (<p className="error-message">Timer can't be more than 50 minutes.</p>
+        )}
+        {invalidValueMessageMaxStudy && (<p className="error-message">Timer can't be more than 120 minutes.</p>
+        )}
 
 
-      <div>
+
+      <div className="timerBtns">
 
         <button onClick={() => {
             const secs = studySession * 60;

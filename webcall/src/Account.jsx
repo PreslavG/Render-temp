@@ -1,7 +1,7 @@
  
 import { useEffect, useState } from "react";
 import { storage } from "./scripts/firebase"; 
-import { ref,listAll, uploadBytes, getDownloadURL } from "firebase/storage";
+import { ref,listAll, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { signOut } from "firebase/auth";
 import {  updateProfile, EmailAuthProvider, reauthenticateWithCredential, verifyBeforeUpdateEmail} from "firebase/auth";
 import Modal from "react-modal";
@@ -29,6 +29,8 @@ Modal.setAppElement("#root");
   const [PhotoUrl, setPhotoUrl] = useState();
   const [profilePic, setProfilePic] = useState();
   const [locked, setLocked] = useState(true);
+  const [popupdelorSet, setPopupdelorSet] = useState(false);
+  const [urlLink, setUrlLink] = useState("");
 
   useEffect(() =>{
     setUrl();
@@ -38,7 +40,18 @@ Modal.setAppElement("#root");
   },[])
 
   
+ const deleteImage = async (url) => {
+  try {
+    const imageRef = ref(storage, `users/${user.uid}/images/${url.split('%2F').pop().split('?')[0]}`); 
+    await deleteObject(imageRef);
 
+    alert("Image deleted successfully");
+    loadImages(); 
+  } catch (error) {
+    console.error("Error deleting image:", error);
+    alert("Failed to delete image");
+  }
+};
   const handleLogout = async () => {
         try {
           await signOut(auth);
@@ -71,7 +84,7 @@ Modal.setAppElement("#root");
     const fileRef = ref(storage, `users/${user.uid}/images/${file.name}`);
     await uploadBytes(fileRef, file);
 
-    console.log("Picture is uploaded");
+    alert("Picture is uploaded");
     loadImages(); 
   };
 
@@ -203,6 +216,7 @@ const saveChanges = async () => {
 
         
         <Modal
+
           isOpen={modalOpen}
           onRequestClose={() => setModalOpen(false)}
           style={{
@@ -214,7 +228,7 @@ const saveChanges = async () => {
           }}
         >
           <h2>Select an image</h2>
-          <div style={{
+          {images.length === 0 ? <p>No images available, upload first!</p> : <div style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fill, 120px)",
             gap: "90px"
@@ -231,11 +245,22 @@ const saveChanges = async () => {
                   borderRadius: 10,
                   border: "3px solid transparent"
                 }}
-                onClick={() => {chooseImage(url), setModalOpen(false)}}
+                onClick={() => { setUrlLink(url) ,setPopupdelorSet(true)}}
               />
             ))}
           </div>
+          }
           
+          {popupdelorSet && (
+            <div className="blurOverlay">
+            <div className="popupdelorSet">
+              <h3>Do you want to set this picture as your profile picture?</h3>
+              <button className="uploadButtonProfile" onClick={() => {chooseImage(urlLink), setModalOpen(false), setPopupdelorSet(false)}}>Set as Profile Picture</button>
+              <button className="deleteButton" onClick={() => {deleteImage(urlLink), setPopupdelorSet(false)}}>Delete </button>
+            </div>
+            </div>
+          )}
+            
 
           <button style={{ marginTop: 20 }} onClick={() => setModalOpen(false)}>
             Close

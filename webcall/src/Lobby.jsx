@@ -13,7 +13,7 @@
     getDoc,
     serverTimestamp,
   } from "firebase/firestore";
-  import { FaTrash, FaPlus } from 'react-icons/fa';
+  import { FaPlus } from 'react-icons/fa';
   import {FaTrashAlt} from 'react-icons/fa';
   import "./Lobby.css";
 
