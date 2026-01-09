@@ -48,11 +48,16 @@ export default function Friends() {
   return unsubscribe;
 }, [user]);
 
+useEffect(() => {
+   console.log("Friends updated:", friendRequests);
+});
+
   useEffect(() => {
     if (!user) return;
     const requestsRef = collection(db, "users", user.uid, "friendRequests");
     const unsubscribe = onSnapshot(requestsRef, snapshot => {
       setFriendRequests(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      
     });
     return unsubscribe;
   }, [user]);
@@ -104,6 +109,7 @@ export default function Friends() {
           fromName: user.displayName ,
           status: "pending",
           createdAt: new Date(),
+          profilePic: profilePic,
         });
 
         alert("Friend request sent!");

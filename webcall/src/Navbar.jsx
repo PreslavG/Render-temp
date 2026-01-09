@@ -67,7 +67,7 @@ export default function Navbar() {
             id="Profile" onClick={()=> navigate("/Account")}           
           />
         ) : (
-          <div className="ProfileDef"/>
+          <div className="ProfileDef" onClick={()=> navigate("/Account")}></div>
         )}
 
     </nav>

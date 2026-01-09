@@ -176,8 +176,7 @@ const saveChanges = async () => {
           <div className="Account_info">
               <h1>{newUsername}</h1>
               <div className="profileDiv" >
-        
-
+      
         {/* PROFILE PIC */}
         {PhotoUrl ? (
           <img
@@ -189,12 +188,16 @@ const saveChanges = async () => {
           />
         ) : (
           <img
-            src={profilePic}  
-            alt="Default"
-            width={150}
-            height={150}
-            style={{ borderRadius: "50%", marginBottom: 10}}
-          />
+              src={profilePic || "/images/default-avatar.jpg"}
+              alt="Profile"
+              width={150}
+              height={150}
+              style={{ borderRadius: "50%", marginBottom: 10, objectFit: "cover" }}
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = "/images/default-avatar.jpg";
+              }}
+            />
         )}
 
         <br />
