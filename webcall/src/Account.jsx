@@ -41,8 +41,10 @@ Modal.setAppElement("#root");
 
   
  const deleteImage = async (url) => {
+  const filename = decodeURIComponent(
+  url.split("/o/")[1].split("?")[0]).split("/").pop();
   try {
-    const imageRef = ref(storage, `users/${user.uid}/images/${url.split('%2F').pop().split('?')[0]}`); 
+    const imageRef = ref(storage, `users/${user.uid}/images/${file.name}`) 
     await deleteObject(imageRef);
 
     alert("Image deleted successfully");

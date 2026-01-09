@@ -103,6 +103,36 @@ const uploadFile = async () => {
     setFilesList(urls);
   };
 
+  useEffect(() => {
+  const unsubscribe = setMessagesFromFb();
+  return () => unsubscribe && unsubscribe();
+}, [adminId, roomId]);
+
+  const setMessagesFromFb = () => {
+  if (!adminId || !roomId) return () => {};
+
+  const messagesRef = collection(
+    db,
+    "users",
+    adminId,
+    "rooms",
+    roomId,
+    "messages"
+  );
+
+  const q = query(messagesRef, orderBy("createdAt", "asc"));
+
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    const msgs = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    setMessages(msgs);
+  });
+
+  return unsubscribe;
+};
+
   const getFileIcon = (name, url) => {
     const ext = name.split(".").pop().toLowerCase();
     const isImage = ["png", "jpg", "jpeg", "gif", "webp"].includes(ext);
@@ -215,7 +245,7 @@ const goToBreakroom = async () => {
 useEffect(() => {
   if (!adminId || !roomId) return;
 
-  const ACTIVE_TIMEOUT = 5000; // 10 seconds
+  const ACTIVE_TIMEOUT = 5000; 
 
   const mainRef = collection(db, "users", adminId, "rooms", roomId, "activeUsers");
   const breakRef = collection(db, "users", adminId, "rooms", roomId, "breakroom", roomId + "breakroom", "activeUsers");
@@ -705,7 +735,7 @@ useEffect(() => {
 
     await addDoc(collection(db, "users", adminId, "rooms", roomId, "messages"), {
       text: newMessage,
-      sender: auth.currentUser?.email || "Anonymous",
+      sender: auth.currentUser?.displayName || "Anonymous",
       createdAt: serverTimestamp(),
     });
 
@@ -819,7 +849,7 @@ async function getAndFormatTime() {
             <h1 className="arrow-right" onClick={() => setWide(!wide)}>❌</h1>
             <div className="messagesBox">
               {messages.map((msg) => {
-                const isMe = msg.sender === userName;
+                const isMe = msg.sender === auth.currentUser?.email;
                 return (
                   <div key={msg.id} className={`message ${isMe ? "message-me" : "message-other"}`}>
                     {!isMe && <strong>{msg.sender}: </strong>}
