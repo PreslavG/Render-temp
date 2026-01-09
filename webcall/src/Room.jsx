@@ -37,7 +37,7 @@ export default function Room() {
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
-  const [isRunning, setIsRunning] = useState();
+  const [isRunning, setIsRunning] = useState(false);
   const [wide, setWide] = useState(false);
   const [showTimerPopup, setShowTimerPopup] = useState(false);
   const [showCustomTimerPopup, setShowCustomTimerPopup] = useState(false);
@@ -60,6 +60,7 @@ export default function Room() {
   const [invalidValueMessageMaxBreak, setInvalidValueMessageMaxBreak] = useState(false);
   const isOwner = auth.currentUser?.uid === adminId;
   const user = auth.currentUser;
+  const switchingRef = useRef(false);
 
   const categories = ["medicine", "mathematics", "language", "science", "history", "art", "technology", "literature"];
   const settings = ["ambient sounds", "backgrounds"];
@@ -187,10 +188,7 @@ const joinRoom = async (room) => {
       name: user.displayName,
     });
 
-    console.log(`User ${user.email} joined breakroom. Total active users: ${totalActive}`);
-    console.log(`User ${user.email} joined breakroom.`);
-    console.log(`Acive user: uid: ${user.uid}, email: ${user.email}, name: ${user.displayName}`);
-
+    
    };
 
 
@@ -217,54 +215,69 @@ const goToBreakroom = async () => {
 useEffect(() => {
   if (!adminId || !roomId) return;
 
-  const activeMainRef = collection(
-    db,
-    "users",
-    adminId,
-    "rooms",
-    roomId,
-    "activeUsers"
-  );
+  const ACTIVE_TIMEOUT = 5000; // 10 seconds
 
-  const activeBreakRef = collection(
-    db,
-    "users",
-    adminId,
-    "rooms",
-    roomId,
-    "breakroom",
-    roomId + "breakroom",
-    "activeUsers"
-  );
+  const mainRef = collection(db, "users", adminId, "rooms", roomId, "activeUsers");
+  const breakRef = collection(db, "users", adminId, "rooms", roomId, "breakroom", roomId + "breakroom", "activeUsers");
 
-  let mainCount = 0;
-  let breakCount = 0;
+  let mainActive = 0;
+  let breakActive = 0;
 
-  const unsubMain = onSnapshot(activeMainRef, (snapshot) => {
-    mainCount = snapshot.size;
-    checkBoth();
+  const countActive = (snapshot) => {
+    const now = Date.now();
+    let count = 0;
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      if (!data.lastSeen) return;
+      const diff = now - data.lastSeen.toMillis();
+      if (diff < ACTIVE_TIMEOUT) count++;
+    });
+    return count;
+  };
+
+  const updateState = async () => {
+    const totalActive = mainActive + breakActive;
+
+    if (totalActive === 0) {
+      setNoActiveUsers(false);
+      setIsRunning(false);
+      setRemaining(-1);
+      await updateTimerInDB(-1, mode, false);
+    } else {
+      setNoActiveUsers(true);
+
+      if (remainingSeconds === undefined) {
+        setRemaining(-1); 
+        setIsRunning(false);
+        await updateTimerInDB(-1, mode, false);
+      }
+    }
+  };
+
+  const unsubMain = onSnapshot(mainRef, (snap) => {
+    mainActive = snap.empty ? 0 : countActive(snap);
+    updateState();
   });
 
-  const unsubBreak = onSnapshot(activeBreakRef, (snapshot) => {
-    breakCount = snapshot.size;
-    checkBoth();
+  const unsubBreak = onSnapshot(breakRef, (snap) => {
+    breakActive = snap.empty ? 0 : countActive(snap);
+    updateState();
   });
-
-  function checkBoth() {
-  if (mainCount + breakCount === 0) { 
-    setIsRunning(false);
-    updateTimerInDB(-1, mode, false);
-  }   else if (remainingSeconds >= 0) {
-    setIsRunning(true); 
-  }
-}
 
   return () => {
     unsubMain();
     unsubBreak();
   };
-}, [adminId, roomId, remainingSeconds, mode]);
+}, [adminId, roomId]);
 
+
+
+
+useEffect(() => {
+  if (switchingRef.current) {
+    switchingRef.current = false; 
+  }
+}, [mode]);
 
  useEffect(() => {
   if (!adminId) return;
@@ -279,87 +292,89 @@ useEffect(() => {
     setMode(data.timer.mode);
     setRemaining(data.timer.remainingSeconds);
     setIsRunning(data.timer.isRunning);
+
   });
 
   return () => unsubscribe();
 }, [adminId, roomId]);
 
-  const updateTimerInDB = async (remainingSeconds, mode, isRunning) => {
-  if (!adminId) {
-    console.warn("updateTimerInDB: adminId not available yet");
-    return;
-  }
-  try {
-    const timerRef = doc(db, "users", adminId, "rooms", roomId);
-    await setDoc(timerRef, {
+  const updateTimerInDB = async (remainingSeconds, mode, running) => {
+  if (!adminId) return;
+
+  // ❌ DO NOT write idle timers
+  if (!Number.isFinite(remainingSeconds) || remainingSeconds < 0) return;
+
+  await setDoc(
+    doc(db, "users", adminId, "rooms", roomId),
+    {
       timer: {
         remainingSeconds,
         mode,
-        isRunning,
+        isRunning: Boolean(running),
         lastUpdated: serverTimestamp(),
-      }
-    }, { merge: true });
-  } catch (error) {
-    console.error("Error updating timer:", error);
-  }
+      },
+    },
+    { merge: true }
+  );
 };
 
-const switchMode = () => {
-  const newMode = mode === "study" ? "break" : "study";
-  const newSeconds = newMode === "study" ? studySession : breakTime ;
 
-  
+
+const switchMode = async () => {
+  if (switchingRef.current) return;
+  switchingRef.current = true;
+
+  const newMode = mode === "study" ? "break" : "study";
+  const newSeconds = newMode === "study" ? studySession * 60 : breakTime * 60;
+  await updateTimerInDB(newSeconds, newMode, true);
 
   setMode(newMode);
   setRemaining(newSeconds);
 
   if (isOwner) {
-    updateTimerInDB(newSeconds, newMode, isRunning); 
+    await updateTimerInDB(newSeconds, newMode, true);
   }
+
+  switchingRef.current = false;
 };
 
 useEffect(() => {
-  if (!isRunning) return;
-  if (!adminId) {
-  }
+  if (!isRunning || !isOwner) return;
 
   const interval = setInterval(() => {
     setRemaining(prev => {
-      const updated = prev > 0 ? prev - 1 : 0;
-
-      if (adminId && isOwner) {
-        updateTimerInDB(updated, mode, isRunning);
-      }
-
-      if (updated <= 0) {
-        clearInterval(interval);
+      if (prev <= 0) {
+        switchMode(); // atomic now
         setShowMessage(true);
+        return 0; // keep zero until switchMode updates
       }
+      const updated = prev - 1;
+      updateTimerInDB(updated, mode, true);
       return updated;
     });
   }, 1000);
 
   return () => clearInterval(interval);
-}, [isRunning, mode, adminId, isOwner]);
+}, [isRunning, isOwner, mode, studySession, breakTime]);
 
-
-
-  useEffect(() => {
+ useEffect(() => {
   if (!adminId || !roomId) return;
 
-  const messagesRef = collection(db, "users", adminId, "rooms", roomId, "messages");
-  const q = query(messagesRef, orderBy("createdAt", "asc"));
+  const timerRef = doc(db, "users", adminId, "rooms", roomId);
+  const unsubscribe = onSnapshot(timerRef, (snapshot) => {
+    if (!snapshot.exists()) return;
+    const data = snapshot.data();
+    if (!data.timer) return;
 
-  const unsubscribe = onSnapshot(q, (snapshot) => {
-    const msgs = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    setMessages(msgs);
+    if (!switchingRef.current) {
+      setMode(data.timer.mode);
+      setRemaining(data.timer.remainingSeconds);
+      setIsRunning(data.timer.isRunning);
+    }
   });
 
   return () => unsubscribe();
-}, [adminId,roomId]);
+}, [adminId, roomId]);
 
  useEffect(() => {
   if (!auth.currentUser || !roomId) return;
@@ -455,13 +470,14 @@ useEffect(() => {
     return count;
   };
 
+
   const updateState = () => {
     const total = mainActive + breakActive;
 
     if (total === 0) {
       setNoActiveUsers(false);
       setIsRunning(false);
-      updateTimerInDB(0, mode, false);
+
     } else {
       setNoActiveUsers(true);
     }
@@ -482,6 +498,8 @@ useEffect(() => {
     unsubBreak();
   };
 }, [adminId, roomId, mode]);
+
+
 
 
   useEffect(() => {
@@ -521,18 +539,19 @@ useEffect(() => {
 }, [roomId, auth.currentUser]);
 
     useEffect(() => {
-            if (!user) return;
+  if (!auth.currentUser || !roomId) return;
 
-            const interval = setInterval(async () => {
-              await setDoc(
-                doc(db, "users", user.uid, "rooms", roomId, "activeUsers", user.uid),
-                { lastSeen: serverTimestamp() },
-                { merge: true }
-              );
-            }, 5000); 
+  const interval = setInterval(async () => {
+    if (!roomOwnerId.current) return;
+    await setDoc(
+      doc(db, "users", roomOwnerId.current, "rooms", roomId, "activeUsers", auth.currentUser.uid),
+      { lastSeen: serverTimestamp() },
+      { merge: true }
+    );
+  }, 5000);
 
-            return () => clearInterval(interval);
-          }, [user, roomId]);
+  return () => clearInterval(interval);
+}, [roomId, auth.currentUser]);
 
 useEffect(() => {
   if (!userEmail) return;
@@ -716,7 +735,7 @@ const playSound = (audioRef) => {
 };
 
 
-   const chooseImage = async (url) => {
+const chooseImage = async (url) => {
   if (!user) return;
   
   setBackgroundUrl(url);
@@ -840,9 +859,9 @@ async function getAndFormatTime() {
 
 
       <div className="timerBtns">
-        <button onClick={() => {const secs = 25 ; setRemaining(secs), setbreakTime(5), setMode("study"),setIsRunning(true),setStudySession(25); updateTimerInDB( secs, "study"); getAndFormatTime();}}>25/5</button> 
-        <button onClick={() => { const secs = 50 ;setRemaining(50 * 60), setbreakTime(10),setMode("study"),setIsRunning(true),setStudySession(50), updateTimerInDB( secs, "study" )}}>50/10</button> 
-        <button onClick={() => { const secs = 90 ;setRemaining(90 * 60), setbreakTime(15), setMode("study"),setIsRunning(true),setStudySession(90), updateTimerInDB( secs, "study" )}}>90/15</button> 
+        <button onClick={() => { setRemaining(1 * 60), setbreakTime(5), setMode("study"),setIsRunning(true),updateTimerInDB( 1*60, "study", true)}}>25/5</button> 
+        <button onClick={() => { setRemaining(50 * 60), setbreakTime(10),setMode("study"),setIsRunning(true), updateTimerInDB( 50*60, "study", true)}}>50/10</button> 
+        <button onClick={() => { setRemaining(90 * 60), setbreakTime(15), setMode("study"),setIsRunning(true), updateTimerInDB( 90*60, "study", true )}}>90/15</button> 
         <button onClick={() => { setShowCustomTimerPopup(true), setShowTimerPopup(false)}}>Custom</button> 
 
         <button onClick={() => setShowTimerPopup(false)}>Cancel</button>
@@ -910,7 +929,6 @@ async function getAndFormatTime() {
     <div className="popup-box">
       <p>Time's up!</p>
       <button onClick={() => {
-        switchMode();       
         setShowMessage(false); 
       }}> Stay
       </button>
@@ -1028,7 +1046,7 @@ async function getAndFormatTime() {
           if (value > 50)  {setInvalidValueMessageMaxBreak(true), value= 50}
           else{
             setInvalidValueMessageMinBreak(false);
-          }                // max 2 hours
+          }                
           if (value < 1) {setInvalidValueMessageMinBreak(true), value= ""}
           else{
             setInvalidValueMessageMinBreak(false);
@@ -1038,7 +1056,7 @@ async function getAndFormatTime() {
 
         
       />
-      {invalidValueMessageMinBreak && (<p className="error-message">Timer can't be less than 1 minute.</p>
+       {invalidValueMessageMinBreak && (<p className="error-message">Timer can't be less than 1 minute.</p>
         )}
         {invalidValueMessageMaxBreak && (<p className="error-message">Timer can't be more than 50 minutes.</p>
         )}
@@ -1054,9 +1072,8 @@ async function getAndFormatTime() {
                setMode("study");
                setIsRunning(true);
                setRemaining(secs);
-               updateTimerInDB( secs, "study");
+               updateTimerInDB( secs, "study", true);
                setShowCustomTimerPopup(false);
-               setStudySession(secs); 
                alert(secs);
 
              }}>

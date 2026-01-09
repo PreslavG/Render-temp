@@ -64,7 +64,6 @@
               ...breakSnap.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }))
             ];
 
-            const ACTIVE_THRESHOLD = 15000; 
             const now = Date.now();
 
             const active = getActiveUsers(allUsers);
