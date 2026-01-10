@@ -46,7 +46,7 @@ export default function Room() {
   const [mode, setMode] = useState("study");
   const [remainingSeconds, setRemaining] = useState(-1);
   const [showMessage, setShowMessage] = useState(false);
-  const [noactiveUsers, setNoActiveUsers] = useState(true);
+  const [activeUserCount, setActiveUserCount] = useState(0);
   const roomOwnerId = useRef(null);
   const [adminId, setAdminId] = useState(null);
   const [showFiles, setShowFiles] = useState(false);
@@ -269,12 +269,13 @@ useEffect(() => {
     const totalActive = mainActive + breakActive;
 
     if (totalActive === 0) {
-      setNoActiveUsers(false);
+      setActiveUserCount(totalActive);
       setIsRunning(false);
       setRemaining(-1);
       await updateTimerInDB(-1, mode, false);
     } else {
-      setNoActiveUsers(true);
+      setActiveUserCount(totalActive);
+      setIsRunning(true);
 
       if (remainingSeconds === undefined) {
         setRemaining(-1); 
@@ -331,7 +332,6 @@ useEffect(() => {
   const updateTimerInDB = async (remainingSeconds, mode, running) => {
   if (!adminId) return;
 
-  // ❌ DO NOT write idle timers
   if (!Number.isFinite(remainingSeconds) || remainingSeconds < 0) return;
 
   await setDoc(
@@ -455,79 +455,6 @@ useEffect(() => {
     );
   };
 }, []);
-
-
- useEffect(() => {
-  if (!adminId || !roomId) return;
-
-  const ACTIVE_TIMEOUT = 10000; 
-
-  const mainRef = collection(
-    db,
-    "users",
-    adminId,
-    "rooms",
-    roomId,
-    "activeUsers"
-  );
-
-  const breakRef = collection(
-    db,
-    "users",
-    adminId,
-    "rooms",
-    roomId,
-    "breakroom",
-    roomId + "breakroom",
-    "activeUsers"
-  );
-
-  let mainActive = 0;
-  let breakActive = 0;
-
-  const countActive = (snapshot) => {
-    const now = Date.now();
-    let count = 0;
-
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      if (!data.lastSeen) return;
-
-      const diff = now - data.lastSeen.toMillis();
-      if (diff < ACTIVE_TIMEOUT) count++;
-    });
-
-    return count;
-  };
-
-
-  const updateState = () => {
-    const total = mainActive + breakActive;
-
-    if (total === 0) {
-      setNoActiveUsers(false);
-      setIsRunning(false);
-
-    } else {
-      setNoActiveUsers(true);
-    }
-  };
-
-  const unsubMain = onSnapshot(mainRef, (snap) => {
-    mainActive = countActive(snap);
-    updateState();
-  });
-
-  const unsubBreak = onSnapshot(breakRef, (snap) => {
-    breakActive = countActive(snap);
-    updateState();
-  });
-
-  return () => {
-    unsubMain();
-    unsubBreak();
-  };
-}, [adminId, roomId, mode]);
 
 
 
@@ -889,9 +816,9 @@ async function getAndFormatTime() {
 
 
       <div className="timerBtns">
-        <button onClick={() => { setRemaining(1 * 60), setbreakTime(5), setMode("study"),setIsRunning(true),updateTimerInDB( 1*60, "study", true)}}>25/5</button> 
-        <button onClick={() => { setRemaining(50 * 60), setbreakTime(10),setMode("study"),setIsRunning(true), updateTimerInDB( 50*60, "study", true)}}>50/10</button> 
-        <button onClick={() => { setRemaining(90 * 60), setbreakTime(15), setMode("study"),setIsRunning(true), updateTimerInDB( 90*60, "study", true )}}>90/15</button> 
+        <button onClick={() => { setRemaining(1 * 60), setbreakTime(5), setMode("study"),setIsRunning(true),updateTimerInDB( 1*60, "study", true), setShowTimerPopup(false)}}>25/5</button> 
+        <button onClick={() => { setRemaining(50 * 60), setbreakTime(10),setMode("study"),setIsRunning(true), updateTimerInDB( 50*60, "study", true), setShowTimerPopup(false)}}>50/10</button> 
+        <button onClick={() => { setRemaining(90 * 60), setbreakTime(15), setMode("study"),setIsRunning(true), updateTimerInDB( 90*60, "study", true ),setShowTimerPopup(false)}}>90/15</button> 
         <button onClick={() => { setShowCustomTimerPopup(true), setShowTimerPopup(false)}}>Custom</button> 
 
         <button onClick={() => setShowTimerPopup(false)}>Cancel</button>
@@ -956,12 +883,15 @@ async function getAndFormatTime() {
 
 {showMessage && (
   <div className="popup-overlay">
-    <div className="popup-box">
+    <div className="timesup-popup-box">
       <p>Time's up!</p>
+      <div className="stay-go-buttons">
       <button onClick={() => {
         setShowMessage(false); 
       }}> Stay
       </button>
+      <button onClick={() => {goToBreakroom(), joinRoom()}}>Take break!</button>
+      </div>
        
     </div>
   </div>

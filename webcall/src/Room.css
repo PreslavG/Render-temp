@@ -766,5 +766,41 @@ justify-content: center;
   width: 100%;
 }
 
+.timesup-popup-box{
+  background-color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2vh;
+  border-radius: 10%;
+}
+
+.timesup-popup-box p{
+  font-size: xx-large;
+}
+
+.stay-go-buttons{
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.stay-go-buttons button{
+  padding: 4px 8px;
+  font-size: large;
+  background: #08090b;
+  color: white;
+  cursor: pointer;
+  font-family: monospace;
+  border-radius: 10%;
+}
+
+.stay-go-buttons button:hover{
+  background-color: rgb(255, 255, 255);
+  color: #08090b;
+}
+
 
 
