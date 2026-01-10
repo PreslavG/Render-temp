@@ -52,15 +52,33 @@ useEffect(() => {
    console.log("Friends updated:", friendRequests);
 });
 
-  useEffect(() => {
-    if (!user) return;
-    const requestsRef = collection(db, "users", user.uid, "friendRequests");
-    const unsubscribe = onSnapshot(requestsRef, snapshot => {
-      setFriendRequests(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      
-    });
-    return unsubscribe;
-  }, [user]);
+ useEffect(() => {
+  if (!user) return;
+
+  const requestsRef = collection(db, "users", user.uid, "friendRequests");
+
+  const unsubscribe = onSnapshot(requestsRef, async (snapshot) => {
+    const requests = await Promise.all(
+      snapshot.docs.map(async (docSnap) => {
+        const data = docSnap.data();
+
+        const userDoc = await getDoc(doc(db, "users", data.fromId));
+
+        return {
+          id: docSnap.id,
+          ...data,
+          profilePic: userDoc.exists()
+            ? userDoc.data().profilePic
+            : null,
+        };
+      })
+    );
+
+    setFriendRequests(requests);
+  });
+
+  return unsubscribe;
+}, [user]);
 
   useEffect(() => {
       if (!user) return;
@@ -109,7 +127,6 @@ useEffect(() => {
           fromName: user.displayName ,
           status: "pending",
           createdAt: new Date(),
-          profilePic: profilePic,
         });
 
         alert("Friend request sent!");
@@ -345,11 +362,13 @@ useEffect(() => {
                 {friendRequests.length === 0 && <p className="noPendMessages">No pending requests.</p>}
                 {friendRequests.map((req) => (
                   <div key={req.id} className="friendRequestItem">
+                    <div className="friendreqPicWrapper">
                     <img
                               src={req.profilePic || "./images/default-avatar.jpg"} 
                               alt={req.name || req.friendEmail}
                               id="friendreqPic"
                      />
+                     </div>
                     <div className="temp">
                     <span id="nameAndEmail">
                       <h1>{req.fromName}</h1>

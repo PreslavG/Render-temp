@@ -83,10 +83,10 @@
 .frElementSecond{
     margin-top: 1vh;
     padding-top: 10px;
-    width: 100%;
+    width: 90%;
     height: 91%;
-    justify-content: space-between;
     position: relative;
+    gap: 0;
     
 }
 
@@ -231,9 +231,8 @@ select option{
     display: flex;
     align-items: center;
     gap: 10px;
-    width: 100%;
+    width: 50%;
     height: 100%;
-    background-color: rgb(255, 255, 255,0.5);
     font-family: monospace;
 }
 
@@ -252,17 +251,19 @@ select option{
 .FriendRequests,
 .RoomInvites{
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
+    grid-template-columns: repeat(3, 2fr);
     width: 100%;
     height: 30%;
 }
-#friendreqPic{
+#friendreqPic {
     width: 20vh;
-    height: 90%;
+    height: 20vh;
+    background-color: aliceblue;
     border: 1px solid black;
     border-radius: 10%;
-    margin-left: 1vh;
+    object-fit: cover;       
+    object-position: center; 
+    display: block;
 }
 
 .reqButtons{
