@@ -438,7 +438,6 @@ useEffect(() => {
         ) : (
           <div className="narrowContent">
             <img src="/images/chatPng.png" className="chatPng1" onClick={() => setWide(!wide)} />
-            <img src="/images/settings.png" className="chatPng"/>
           </div>
         )}
         
